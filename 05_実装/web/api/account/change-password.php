@@ -1,0 +1,4 @@
+<?php
+declare(strict_types=1);
+
+require dirname(__DIR__).'/bootstrap.php';require_method('POST');$user=require_user($config);require_csrf();$body=json_body();$current=(string)($body['current_password']??'');$next=(string)($body['new_password']??'');if(strlen($next)<12||strlen($next)>200)json_error('VALIDATION_ERROR','New password must be at least 12 characters.');$stmt=db($config)->prepare('SELECT password_hash FROM users WHERE id=?');$stmt->execute([$user['id']]);$hash=$stmt->fetchColumn();if(!$hash||!password_verify($current,$hash))json_error('PASSWORD_INCORRECT','Current password is incorrect.',403);db($config)->prepare('UPDATE users SET password_hash=? WHERE id=?')->execute([password_hash($next,PASSWORD_DEFAULT),$user['id']]);json_response(['ok'=>true]);

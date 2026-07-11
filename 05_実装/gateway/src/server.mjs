@@ -65,6 +65,7 @@ wss.on("connection", (client) => {
   const charge = async (final = false) => {
     if (!claims || !startedAt || settling || closing && !final) return;
     const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+    if (elapsed >= 7200) final = true;
     const delta = Math.min(30, Math.max(0, elapsed - settledSeconds));
     if (delta === 0 && !final) return;
     settling = true;

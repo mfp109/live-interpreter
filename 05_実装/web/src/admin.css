@@ -1,1 +1,149 @@
-.auth-dialog input:not([type=checkbox]){display:block;width:100%;margin-top:7px;padding:14px;border:1px solid #ccd8d4;border-radius:12px}.admin-panel{max-width:1160px;margin:38px auto;padding:36px;border:1px solid #d7e2dd;border-radius:26px;background:#fff}.stat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin:28px 0}.stat-grid article{padding:20px;border-radius:16px;background:#edf5f1}.stat-grid span,.stat-grid small{display:block;color:#66807a;font-size:12px}.stat-grid strong{display:block;margin:8px 0;font:700 27px Georgia,serif}.admin-search{display:flex;gap:10px;margin:30px 0}.admin-search input{flex:1;padding:13px;border:1px solid #cedbd6;border-radius:12px}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;text-align:left;font-size:13px}th,td{padding:13px;border-bottom:1px solid #e3e9e6}td small{display:block;color:#80908d;margin-top:4px}td button{margin:2px;padding:7px 9px;border:1px solid #c9d7d2;border-radius:8px;background:#fff;color:#245d55}.legal-page{max-width:850px;min-height:calc(100vh - 150px);margin:auto;padding:70px 25px;line-height:1.9}.legal-page h1{font:700 45px Georgia,serif}.legal-page h2{margin-top:35px;font:700 25px Georgia,serif}.legal-page p,.legal-page dd{color:#4e6568}.legal-page dl{display:grid;grid-template-columns:180px 1fr;border-top:1px solid #d8e1dd}.legal-page dt,.legal-page dd{margin:0;padding:15px;border-bottom:1px solid #d8e1dd}.legal-page dt{font-weight:800}.standalone-page{min-height:100vh;display:grid;place-items:center;padding:25px;background:#eaf2ed}.reset-card{position:relative}.reset-card h2{font:700 34px Georgia,serif}@media(max-width:900px){.stat-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:520px){.admin-panel{padding:22px 14px}.stat-grid{grid-template-columns:1fr 1fr}.legal-page dl{grid-template-columns:1fr}.legal-page dt{border-bottom:0;padding-bottom:0}}
+.auth-dialog input:not([type="checkbox"]) {
+  display: block;
+  width: 100%;
+  margin-top: 7px;
+  padding: 14px;
+  border: 1px solid #ccd8d4;
+  border-radius: 12px;
+}
+.admin-panel {
+  max-width: 1160px;
+  margin: 38px auto;
+  padding: 36px;
+  border: 1px solid #d7e2dd;
+  border-radius: 26px;
+  background: #fff;
+}
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+  margin: 28px 0;
+}
+.stat-grid article {
+  padding: 20px;
+  border-radius: 16px;
+  background: #edf5f1;
+}
+.stat-grid span,
+.stat-grid small {
+  display: block;
+  color: #66807a;
+  font-size: 12px;
+}
+.stat-grid strong {
+  display: block;
+  margin: 8px 0;
+  font:
+    700 27px Georgia,
+    serif;
+}
+.admin-search {
+  display: flex;
+  gap: 10px;
+  margin: 30px 0;
+}
+.admin-search input {
+  flex: 1;
+  padding: 13px;
+  border: 1px solid #cedbd6;
+  border-radius: 12px;
+}
+.table-wrap {
+  overflow: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13px;
+}
+th,
+td {
+  padding: 13px;
+  border-bottom: 1px solid #e3e9e6;
+}
+td small {
+  display: block;
+  color: #80908d;
+  margin-top: 4px;
+}
+td button {
+  margin: 2px;
+  padding: 7px 9px;
+  border: 1px solid #c9d7d2;
+  border-radius: 8px;
+  background: #fff;
+  color: #245d55;
+}
+.legal-page {
+  max-width: 850px;
+  min-height: calc(100vh - 150px);
+  margin: auto;
+  padding: 70px 25px;
+  line-height: 1.9;
+}
+.legal-page h1 {
+  font:
+    700 45px Georgia,
+    serif;
+}
+.legal-page h2 {
+  margin-top: 35px;
+  font:
+    700 25px Georgia,
+    serif;
+}
+.legal-page p,
+.legal-page dd {
+  color: #4e6568;
+}
+.legal-page dl {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  border-top: 1px solid #d8e1dd;
+}
+.legal-page dt,
+.legal-page dd {
+  margin: 0;
+  padding: 15px;
+  border-bottom: 1px solid #d8e1dd;
+}
+.legal-page dt {
+  font-weight: 800;
+}
+.standalone-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 25px;
+  background: #eaf2ed;
+}
+.reset-card {
+  position: relative;
+}
+.reset-card h2 {
+  font:
+    700 34px Georgia,
+    serif;
+}
+@media (max-width: 900px) {
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 520px) {
+  .admin-panel {
+    padding: 22px 14px;
+  }
+  .stat-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .legal-page dl {
+    grid-template-columns: 1fr;
+  }
+  .legal-page dt {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+}
