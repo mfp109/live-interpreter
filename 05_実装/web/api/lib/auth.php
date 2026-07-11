@@ -50,6 +50,25 @@ function audit_admin(array $config, string $adminId, string $action, ?string $ta
     $stmt->execute([$adminId,$action,$targetType,$targetId,$_SERVER['HTTP_X_REQUEST_ID'] ?? null,$ipHash]);
 }
 
+function security_hash(array $config,string $value): string
+{
+    $secret=(string)($config['security_hash_secret']??'');
+    if($secret===''||$secret==='CHANGE_ME')throw new RuntimeException('Security hash secret is not configured.');
+    return hash_hmac('sha256',$value,$secret);
+}
+
+function enforce_login_rate_limit(array $config,string $email): void
+{
+    $pdo=db($config);$emailHash=security_hash($config,strtolower($email));$ipHash=security_hash($config,$_SERVER['REMOTE_ADDR']??'');
+    $stmt=$pdo->prepare('SELECT SUM(email_hash=?) email_failures,SUM(ip_hash=?) ip_failures FROM auth_attempts WHERE succeeded=0 AND created_at>DATE_SUB(NOW(),INTERVAL 15 MINUTE)');$stmt->execute([$emailHash,$ipHash]);$row=$stmt->fetch();
+    if((int)($row['email_failures']??0)>=5||(int)($row['ip_failures']??0)>=20)json_error('RATE_LIMITED','Too many attempts. Try again later.',429);
+}
+
+function record_login_attempt(array $config,string $email,bool $succeeded): void
+{
+    $stmt=db($config)->prepare('INSERT INTO auth_attempts (email_hash,ip_hash,succeeded) VALUES (?,?,?)');$stmt->execute([security_hash($config,strtolower($email)),security_hash($config,$_SERVER['REMOTE_ADDR']??''),$succeeded?1:0]);
+}
+
 function issue_csrf_token(): string
 {
     if (!isset($_SESSION['csrf'])) $_SESSION['csrf'] = bin2hex(random_bytes(32));

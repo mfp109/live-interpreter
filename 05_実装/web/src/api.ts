@@ -6,6 +6,7 @@ export class ApiError extends Error { constructor(public code:string,message:str
 
 export async function api<T>(path:string, options:RequestInit={}, csrf?:string):Promise<T>{
   const headers=new Headers(options.headers);
+  let deviceId=localStorage.getItem('swli.device');if(!deviceId){deviceId=crypto.randomUUID();localStorage.setItem('swli.device',deviceId)}headers.set('X-Device-ID',deviceId);
   if(options.body) headers.set("Content-Type","application/json");
   if(csrf) headers.set("X-CSRF-Token",csrf);
   const response=await fetch(`/api/${path}`,{...options,headers,credentials:"same-origin"});

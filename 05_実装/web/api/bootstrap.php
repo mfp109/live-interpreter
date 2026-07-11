@@ -14,5 +14,6 @@ $config = require $configPath;
 require_once API_ROOT . '/lib/http.php';
 require_once API_ROOT . '/lib/db.php';
 require_once API_ROOT . '/lib/auth.php';
+require_once API_ROOT . '/lib/credits.php';
 
 start_secure_session($config);
