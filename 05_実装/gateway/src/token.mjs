@@ -10,7 +10,7 @@ export function verifyAccessToken(token, secret, now = Math.floor(Date.now() / 1
   const supplied = decode(signatureText);
   if (expected.length !== supplied.length || !crypto.timingSafeEqual(expected, supplied)) throw new Error("token_invalid");
   const claims = JSON.parse(decode(payloadText).toString("utf8"));
-  if (!claims.sid || !claims.uid || !claims.dst || !claims.exp || claims.exp < now) throw new Error("token_expired");
+  if (!claims.sid || !claims.uid || !claims.dst || !claims.nonce || !claims.exp || claims.exp < now) throw new Error("token_expired");
   return claims;
 }
 

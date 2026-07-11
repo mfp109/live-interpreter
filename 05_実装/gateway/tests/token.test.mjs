@@ -7,11 +7,11 @@ const b64 = (value) => Buffer.from(value).toString("base64url");
 function token(claims, secret) { const payload=b64(JSON.stringify(claims)); return `${payload}.${crypto.createHmac("sha256",secret).update(payload).digest("base64url")}`; }
 
 test("accepts a signed unexpired access token",()=>{
-  const claims={sid:"s",uid:"u",dst:"en",exp:2000};
+  const claims={sid:"s",uid:"u",dst:"en",nonce:"n",exp:2000};
   assert.deepEqual(verifyAccessToken(token(claims,"secret"),"secret",1000),claims);
 });
 test("rejects tampering and expiration",()=>{
-  const value=token({sid:"s",uid:"u",dst:"en",exp:900},"secret");
+  const value=token({sid:"s",uid:"u",dst:"en",nonce:"n",exp:900},"secret");
   assert.throws(()=>verifyAccessToken(value,"secret",1000));
   assert.throws(()=>verifyAccessToken(value+"x","secret",800));
 });

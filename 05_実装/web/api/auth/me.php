@@ -8,4 +8,5 @@ $stmt = $pdo->prepare('SELECT trial_seconds,paid_seconds,reserved_seconds FROM w
 $stmt->execute([$user['id']]);
 $wallet = $stmt->fetch() ?: ['trial_seconds'=>0,'paid_seconds'=>0,'reserved_seconds'=>0];
 $pdo->commit();
+unset($user['auth_version']);
 json_response(['ok' => true, 'user' => $user, 'wallet' => $wallet, 'csrf_token' => issue_csrf_token()]);

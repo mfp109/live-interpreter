@@ -37,13 +37,20 @@ const server = http.createServer((request, response) => {
 });
 
 const wss = new WebSocketServer({ noServer: true, maxPayload: 256 * 1024 });
+const connectionsByIp = new Map();
+const consumedNonces = new Map();
+const activeSessions = new Set();
 server.on("upgrade", (request, socket, head) => {
   const origin = request.headers.origin || "";
   if (!configured() || request.url !== "/translate" || origin !== config.allowedOrigin) return socket.destroy();
+  const ip = request.socket.remoteAddress || "unknown";
+  if (wss.clients.size >= 200 || (connectionsByIp.get(ip) || 0) >= 20) return socket.destroy();
   wss.handleUpgrade(request, socket, head, (client) => wss.emit("connection", client, request));
 });
 
-wss.on("connection", (client) => {
+wss.on("connection", (client, request) => {
+  const ip = request.socket.remoteAddress || "unknown";
+  connectionsByIp.set(ip, (connectionsByIp.get(ip) || 0) + 1);
   let claims;
   let upstream;
   let startedAt = 0;
@@ -51,6 +58,8 @@ wss.on("connection", (client) => {
   let sequence = 0;
   let settling = false;
   let closing = false;
+  const authTimer = setTimeout(() => closeBoth(1008, "authentication_timeout"), 10000);
+  authTimer.unref();
 
   const closeBoth = (code = 1000, reason = "completed") => {
     if (closing) return;
@@ -87,7 +96,16 @@ wss.on("connection", (client) => {
     try { event = JSON.parse(raw.toString()); } catch { return closeBoth(1003, "invalid_json"); }
     if (!claims) {
       if (event.type !== "authenticate") return closeBoth(1008, "authentication_required");
-      try { claims = verifyAccessToken(event.access_token, config.sharedSecret); } catch { return closeBoth(1008, "invalid_token"); }
+      try {
+        const verified = verifyAccessToken(event.access_token, config.sharedSecret);
+        const nonceExpiry = consumedNonces.get(verified.nonce);
+        if (!verified.nonce || (nonceExpiry && nonceExpiry >= Math.floor(Date.now() / 1000)) || activeSessions.has(verified.sid)) throw new Error("replayed_token");
+        claims = verified;
+        consumedNonces.set(claims.nonce, claims.exp);
+        activeSessions.add(claims.sid);
+        setTimeout(() => consumedNonces.delete(claims.nonce), Math.max(1000, (claims.exp * 1000) - Date.now() + 1000)).unref();
+        clearTimeout(authTimer);
+      } catch { return closeBoth(1008, "invalid_token"); }
       const safetyId = crypto.createHash("sha256").update(claims.uid).digest("hex");
       upstream = new WebSocket("wss://api.openai.com/v1/realtime/translations?model=gpt-realtime-translate", {
         headers: { Authorization: `Bearer ${config.openaiKey}`, "OpenAI-Safety-Identifier": safetyId },
@@ -116,7 +134,11 @@ wss.on("connection", (client) => {
   });
 
   client.on("close", () => {
+    clearTimeout(authTimer);
     clearInterval(billingTimer);
+    connectionsByIp.set(ip, Math.max(0, (connectionsByIp.get(ip) || 1) - 1));
+    if (connectionsByIp.get(ip) === 0) connectionsByIp.delete(ip);
+    if (claims?.sid) activeSessions.delete(claims.sid);
     if (claims && startedAt && !closing) charge(true).catch(() => {});
     if (upstream?.readyState < WebSocket.CLOSING) upstream.close();
   });

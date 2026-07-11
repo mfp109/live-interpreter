@@ -4,14 +4,24 @@ declare(strict_types=1);
 require dirname(__DIR__) . '/bootstrap.php';
 require_once dirname(__DIR__) . '/lib/mail.php';
 require_method('POST');
+$requestStarted = microtime(true);
 $email = strtolower(trim((string)(json_body()['email'] ?? '')));
 $generic = ['ok'=>true,'message'=>'If the account exists, a reset email will be sent.'];
-if (!filter_var($email, FILTER_VALIDATE_EMAIL)) json_response($generic, 202);
+function finish_reset_request(array $payload, float $started): never {
+    $remaining = 0.6 - (microtime(true) - $started);
+    if ($remaining > 0) usleep((int)($remaining * 1000000));
+    json_response($payload, 202);
+}
+if (!filter_var($email, FILTER_VALIDATE_EMAIL)) finish_reset_request($generic, $requestStarted);
 $pdo = db($config);
+$emailHash=security_hash($config,$email);$ipHash=security_hash($config,$_SERVER['REMOTE_ADDR']??'');
+$stmt=$pdo->prepare('SELECT SUM(email_hash=?) email_count,SUM(ip_hash=?) ip_count FROM password_reset_attempts WHERE created_at>DATE_SUB(NOW(),INTERVAL 1 HOUR)');$stmt->execute([$emailHash,$ipHash]);$limits=$stmt->fetch();
+if((int)($limits['email_count']??0)>=3||(int)($limits['ip_count']??0)>=10)finish_reset_request($generic,$requestStarted);
+$pdo->prepare('INSERT INTO password_reset_attempts (email_hash,ip_hash) VALUES (?,?)')->execute([$emailHash,$ipHash]);
 $stmt = $pdo->prepare("SELECT id,locale FROM users WHERE email=? AND status='active' AND deleted_at IS NULL");
 $stmt->execute([$email]);
 $user = $stmt->fetch();
-if (!$user) { usleep(200000); json_response($generic, 202); }
+if (!$user) finish_reset_request($generic, $requestStarted);
 $token = bin2hex(random_bytes(32));
 try {
     $pdo->beginTransaction();
@@ -23,4 +33,4 @@ try {
     if ($pdo->inTransaction()) $pdo->rollBack();
     error_log('password reset request failed: '.$error->getMessage());
 }
-json_response($generic, 202);
+finish_reset_request($generic, $requestStarted);

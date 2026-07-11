@@ -31,8 +31,8 @@ try {
         $stmt->execute([$userId, $email, password_hash($password, PASSWORD_DEFAULT), $locale]);
         $pdo->prepare('INSERT INTO wallets (user_id) VALUES (?)')->execute([$userId]);
     } else {
-        $pdo->prepare('UPDATE users SET password_hash=?, locale=?, terms_version=?, terms_accepted_at=NOW() WHERE id=?')
-            ->execute([password_hash($password, PASSWORD_DEFAULT), $locale, '2026-07-11', $userId]);
+        // A registration retry must never replace credentials before mailbox ownership is proven.
+        $pdo->prepare('UPDATE users SET locale=? WHERE id=?')->execute([$locale, $userId]);
         $pdo->prepare('UPDATE email_verification_tokens SET used_at=NOW() WHERE user_id=? AND used_at IS NULL')->execute([$userId]);
     }
 
