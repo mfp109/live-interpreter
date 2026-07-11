@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require dirname(__DIR__) . '/bootstrap.php';
+require_once dirname(__DIR__) . '/lib/mail.php';
 require_method('POST');
 $body = json_body();
 $email = strtolower(trim((string)($body['email'] ?? '')));
@@ -40,7 +41,10 @@ try {
         ->execute([uuid_v4(), $userId, hash('sha256', $token)]);
     $pdo->commit();
 
-    // Mail delivery is wired in the next implementation step. Never log the raw token in production.
+    if (!send_verification_email($config, $email, $locale, $token)) {
+        error_log('verification mail delivery failed user=' . $userId);
+        json_error('MAIL_DELIVERY_FAILED', 'Verification email could not be sent. Please try again.', 502);
+    }
     json_response(['ok' => true, 'message' => 'If registration is available, a verification email will be sent.'], 202);
 } catch (Throwable $error) {
     if ($pdo->inTransaction()) $pdo->rollBack();

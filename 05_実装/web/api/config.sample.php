@@ -18,7 +18,7 @@ return [
     'gateway_shared_secret' => 'CHANGE_ME',
     'mail' => [
         'from' => 'CHANGE_ME',
-        'transport' => 'smtp',
+        'transport' => 'mail',
         'host' => 'CHANGE_ME',
         'port' => 587,
         'user' => 'CHANGE_ME',
