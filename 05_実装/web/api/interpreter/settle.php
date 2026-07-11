@@ -15,7 +15,7 @@ $sessionId = (string)($body['session_id'] ?? '');
 $sequence = filter_var($body['sequence'] ?? null, FILTER_VALIDATE_INT);
 $seconds = filter_var($body['seconds'] ?? null, FILTER_VALIDATE_INT);
 $final = ($body['final'] ?? false) === true;
-if (!preg_match('/^[a-f0-9-]{36}$/', $sessionId) || $sequence === false || $sequence < 1 || $seconds === false || $seconds < 1 || $seconds > 30) json_error('VALIDATION_ERROR', 'Invalid settlement.');
+if (!preg_match('/^[a-f0-9-]{36}$/', $sessionId) || $sequence === false || $sequence < 1 || $seconds === false || $seconds < 0 || $seconds > 30 || ($seconds === 0 && !$final)) json_error('VALIDATION_ERROR', 'Invalid settlement.');
 
 $pdo = db($config);
 try {
