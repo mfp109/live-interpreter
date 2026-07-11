@@ -72,6 +72,9 @@ const copy = {
     terms: "利用規約",
     privacy: "プライバシー",
     commercial: "特定商取引法に基づく表記",
+    refund: "返金ポリシー",
+    cookie: "Cookieポリシー",
+    contact: "お問い合わせ",
     back: "トップへ戻る",
   },
   en: {
@@ -129,6 +132,9 @@ const copy = {
     terms: "Terms",
     privacy: "Privacy",
     commercial: "Commercial disclosure",
+    refund: "Refund policy",
+    cookie: "Cookie policy",
+    contact: "Contact",
     back: "Back to home",
   },
   "zh-CN": {
@@ -181,6 +187,9 @@ const copy = {
     terms: "使用条款",
     privacy: "隐私政策",
     commercial: "商业交易说明",
+    refund: "退款政策",
+    cookie: "Cookie政策",
+    contact: "联系我们",
     back: "返回首页",
   },
 } as const;
@@ -311,11 +320,17 @@ export function App() {
     );
   const legalKind = path.includes("commercial-disclosure")
     ? "commercial-disclosure"
-    : path.includes("privacy")
-      ? "privacy"
-      : path.includes("terms")
-        ? "terms"
-        : null;
+    : path.includes("refund")
+      ? "refund"
+      : path.includes("cookie")
+        ? "cookie"
+        : path.includes("contact")
+          ? "contact"
+          : path.includes("privacy")
+            ? "privacy"
+            : path.includes("terms")
+              ? "terms"
+              : null;
   if (legalKind)
     return (
       <div className="site">
@@ -547,7 +562,12 @@ export function App() {
           </section>
           <section id="demo" className="demo-section">
             <div className="demo-video-wrap">
-              <video className="demo-video" controls playsInline preload="metadata">
+              <video
+                className="demo-video"
+                controls
+                playsInline
+                preload="metadata"
+              >
                 <source src="/media/live-demo.mp4" type="video/mp4" />
               </video>
               <span>{t.demoPlaceholder}</span>
@@ -613,6 +633,12 @@ export function App() {
         <span>
           <a href="/terms">{t.terms}</a> · <a href="/privacy">{t.privacy}</a> ·{" "}
           <a href="/commercial-disclosure">{t.commercial}</a>
+          {" · "}
+          <a href="/refund">{t.refund}</a>
+          {" · "}
+          <a href="/cookie">{t.cookie}</a>
+          {" · "}
+          <a href="/contact">{t.contact}</a>
         </span>
       </footer>
       {auth && (

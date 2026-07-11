@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/bootstrap.php';
 require_once dirname(__DIR__) . '/lib/stripe.php';
+require_once dirname(__DIR__) . '/lib/refunds.php';
 require_method('POST');
 $payload = file_get_contents('php://input') ?: '';
 try {
@@ -54,10 +55,15 @@ try {
         if($intent==='')throw new RuntimeException('PAYMENT_INTENT_MISSING');
         $stmt=$pdo->prepare('SELECT p.id,p.user_id,p.amount_minor,p.refunded_minor,p.revoked_seconds,p.status,pr.seconds_granted FROM payments p JOIN products pr ON pr.id=p.product_id WHERE p.stripe_payment_intent_id=? FOR UPDATE');$stmt->execute([$intent]);$payment=$stmt->fetch();
         if(!$payment)throw new RuntimeException('PAYMENT_NOT_FOUND');
-        $isDispute=$event['type']==='charge.dispute.created';$refunded=$isDispute?(int)$payment['amount_minor']:min((int)$payment['amount_minor'],max(0,(int)($charge['amount_refunded']??0)));$target=min((int)$payment['seconds_granted'],(int)floor((int)$payment['seconds_granted']*($refunded/max(1,(int)$payment['amount_minor']))));$delta=max(0,$target-(int)$payment['revoked_seconds']);
+        $isDispute=$event['type']==='charge.dispute.created';$refunded=$isDispute?(int)$payment['amount_minor']:min((int)$payment['amount_minor'],max(0,(int)($charge['amount_refunded']??0)));$target=refund_target_seconds((int)$payment['seconds_granted'],(int)$payment['amount_minor'],$refunded);$delta=refund_delta_seconds($target,(int)$payment['revoked_seconds']);
         $removed=revoke_paid_lot($pdo,$payment['user_id'],'payment',$payment['id'],$delta);
         if($removed>0){$type=$isDispute?'chargeback':'refund';$pdo->prepare("INSERT INTO credit_ledger (id,user_id,entry_type,paid_delta,reference_type,reference_id,idempotency_key,note) VALUES (?,?,? ,?,'payment',?,?,?)")->execute([uuid_v4(),$payment['user_id'],$type,-$removed,$payment['id'],$type.':'.$event['id'],$isDispute?'Stripe dispute':'Stripe refund']);}
         $pdo->prepare('UPDATE payments SET status=?,refunded_minor=GREATEST(refunded_minor,?),revoked_seconds=revoked_seconds+? WHERE id=?')->execute([$isDispute?'disputed':'refunded',$refunded,$removed,$payment['id']]);
+        if(!$isDispute){$mark=$pdo->prepare("UPDATE refund_requests SET status='processed' WHERE payment_id=? AND stripe_refund_id=? AND status='submitted'");foreach(($charge['refunds']['data']??[]) as $refund){$refundId=(string)($refund['id']??'');if($refundId!=='')$mark->execute([$payment['id'],$refundId]);}}
+    }
+    if(in_array($event['type'],['refund.updated','refund.failed'],true)){
+        $refund=$event['data']['object']??[];$requestId=(string)($refund['metadata']['refund_request_id']??'');
+        if($requestId!==''){$status=(($refund['status']??'')==='failed'||$event['type']==='refund.failed')?'failed':((($refund['status']??'')==='succeeded')?'processed':'submitted');$pdo->prepare('UPDATE refund_requests SET status=?,error_code=? WHERE id=?')->execute([$status,$status==='failed'?'STRIPE_REFUND_FAILED':null,$requestId]);}
     }
 
     $pdo->prepare("UPDATE stripe_events SET status='processed',processed_at=NOW() WHERE event_id=?")->execute([$event['id']]);

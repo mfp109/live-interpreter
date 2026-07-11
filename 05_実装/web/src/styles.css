@@ -9,6 +9,7 @@
 }
 body {
   margin: 0;
+  overflow-x: hidden;
 }
 button,
 select {
@@ -117,6 +118,9 @@ nav a {
     radial-gradient(circle at 82% 10%, #d8eee4 0, transparent 32%),
     linear-gradient(130deg, #f7f9f5, #edf5f0);
 }
+.hero > * {
+  min-width: 0;
+}
 .eyebrow {
   display: flex;
   gap: 8px;
@@ -156,6 +160,8 @@ nav a {
   margin: 0 5px;
 }
 .interpreter-card {
+  width: 100%;
+  min-width: 0;
   background: #fff;
   border: 1px solid #dce7e2;
   border-radius: 28px;
@@ -391,6 +397,17 @@ footer {
   }
   .brand > span:last-child {
     font-size: 12px;
+  }
+  .brand {
+    min-width: 0;
+  }
+  .locale {
+    flex: 0 0 auto;
+    max-width: 112px;
+    padding: 8px 9px;
+  }
+  .locale select {
+    width: 68px;
   }
   .hero {
     padding: 45px 20px;

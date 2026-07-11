@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { Headphones, Mic, Pause, Play, Square, Volume2, VolumeX } from "lucide-react";
+import {
+  Headphones,
+  Mic,
+  Pause,
+  Play,
+  Square,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 import { api, ApiError, formatTime, Wallet } from "./api";
 
 type Locale = "ja" | "en" | "zh-CN";
@@ -26,6 +34,7 @@ const ui = {
     same: "入力言語と出力言語を別にしてください。",
     empty: "通訳時間がありません。",
     closed: "通訳接続が終了しました。",
+    reconnecting: "接続が切れました。再接続しています…",
     used: "今回の利用時間",
   },
   en: {
@@ -50,6 +59,7 @@ const ui = {
     same: "Choose different input and output languages.",
     empty: "No interpretation time remains.",
     closed: "The interpretation connection ended.",
+    reconnecting: "Connection lost. Reconnecting…",
     used: "This session",
   },
   "zh-CN": {
@@ -74,6 +84,7 @@ const ui = {
     same: "请选择不同的输入和输出语言。",
     empty: "没有剩余口译时间。",
     closed: "口译连接已结束。",
+    reconnecting: "连接中断，正在重新连接…",
     used: "本次使用",
   },
 } as const;
@@ -147,10 +158,16 @@ export function Interpreter({
   const timer = useRef<number | null>(null);
   const userStopped = useRef(false);
   const pausedRef = useRef(false);
+  const reconnectCount = useRef(0);
+  const remainingRef = useRef(remaining);
+  const reconnectTimer = useRef<number | null>(null);
   const autoPrepareStarted = useRef(false);
   useEffect(() => {
     setRemaining(Number(wallet.trial_seconds) + Number(wallet.paid_seconds));
   }, [wallet]);
+  useEffect(() => {
+    remainingRef.current = remaining;
+  }, [remaining]);
   useEffect(() => {
     volumeRef.current = volume;
   }, [volume]);
@@ -242,74 +259,10 @@ export function Interpreter({
     }
     try {
       await prepare();
+      reconnectCount.current = 0;
+      setElapsed(0);
       setStatus("connecting");
-      const authorization = await api<{
-        gateway_url: string;
-        access_token: string;
-      }>(
-        "interpreter/authorize.php",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            source_language: source,
-            target_language: target,
-          }),
-        },
-        csrf,
-      );
-      const ws = new WebSocket(
-        authorization.gateway_url.replace(/^http/, "ws") + "/translate",
-      );
-      socket.current = ws;
-      ws.onopen = () =>
-        ws.send(
-          JSON.stringify({
-            type: "authenticate",
-            access_token: authorization.access_token,
-          }),
-        );
-      ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (data.type === "ready") {
-          setStatus("live");
-          setElapsed(0);
-          timer.current = window.setInterval(
-            () => { if (!pausedRef.current) setElapsed((value) => value + 1); },
-            1000,
-          );
-          const ctx = context.current!;
-          const src = ctx.createMediaStreamSource(stream.current!);
-          const proc = ctx.createScriptProcessor(4096, 1, 1);
-          processor.current = proc;
-          proc.onaudioprocess = (e) => {
-            if (ws.readyState === WebSocket.OPEN && !pausedRef.current)
-              ws.send(
-                JSON.stringify({
-                  type: "audio",
-                  audio: encodePcm16(
-                    e.inputBuffer.getChannelData(0),
-                    ctx.sampleRate,
-                  ),
-                }),
-              );
-          };
-          src.connect(proc);
-          proc.connect(ctx.destination);
-        }
-        if (data.type === "audio") play(data.delta);
-        if (data.type === "paused") { pausedRef.current = true; setStatus("paused"); }
-        if (data.type === "resumed") { pausedRef.current = false; setStatus("live"); }
-        if (data.type === "billing") {
-          setRemaining(data.remaining_seconds);
-          onBalance(data.remaining_seconds);
-        }
-      };
-      ws.onclose = (event) => {
-        finishSession();
-        if (event.reason === "balance_exhausted") setMessage(t.empty);
-        else if (!userStopped.current && event.code !== 1000)
-          setMessage(t.closed);
-      };
+      await connect();
     } catch (error) {
       finishSession();
       setMessage(
@@ -321,23 +274,137 @@ export function Interpreter({
       );
     }
   }
-  function finishSession() {
-    pausedRef.current = false;
-    setStatus("idle");
+  async function connect() {
+    const authorization = await api<{
+      gateway_url: string;
+      access_token: string;
+    }>(
+      "interpreter/authorize.php",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          source_language: source,
+          target_language: target,
+        }),
+      },
+      csrf,
+    );
+    const ws = new WebSocket(
+      authorization.gateway_url.replace(/^http/, "ws") + "/translate",
+    );
+    socket.current = ws;
+    ws.onopen = () =>
+      ws.send(
+        JSON.stringify({
+          type: "authenticate",
+          access_token: authorization.access_token,
+        }),
+      );
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === "ready") {
+        setStatus("live");
+        setMessage("");
+        if (timer.current !== null) clearInterval(timer.current);
+        timer.current = window.setInterval(() => {
+          if (!pausedRef.current) setElapsed((value) => value + 1);
+        }, 1000);
+        const ctx = context.current!;
+        const src = ctx.createMediaStreamSource(stream.current!);
+        const proc = ctx.createScriptProcessor(4096, 1, 1);
+        processor.current = proc;
+        proc.onaudioprocess = (e) => {
+          if (ws.readyState === WebSocket.OPEN && !pausedRef.current)
+            ws.send(
+              JSON.stringify({
+                type: "audio",
+                audio: encodePcm16(
+                  e.inputBuffer.getChannelData(0),
+                  ctx.sampleRate,
+                ),
+              }),
+            );
+        };
+        src.connect(proc);
+        proc.connect(ctx.destination);
+      }
+      if (data.type === "audio") play(data.delta);
+      if (data.type === "paused") {
+        pausedRef.current = true;
+        setStatus("paused");
+      }
+      if (data.type === "resumed") {
+        pausedRef.current = false;
+        setStatus("live");
+      }
+      if (data.type === "billing") {
+        setRemaining(data.remaining_seconds);
+        onBalance(data.remaining_seconds);
+      }
+    };
+    ws.onclose = (event) => {
+      detachConnection();
+      if (event.reason === "balance_exhausted") {
+        finishSession();
+        setMessage(t.empty);
+      } else if (
+        !userStopped.current &&
+        event.code !== 1000 &&
+        remainingRef.current > 0
+      )
+        retryConnection(800);
+      else {
+        finishSession();
+        if (!userStopped.current && event.code !== 1000) setMessage(t.closed);
+      }
+    };
+  }
+  function retryConnection(delay: number) {
+    if (userStopped.current || reconnectCount.current >= 2) {
+      finishSession();
+      if (!userStopped.current) setMessage(t.closed);
+      return;
+    }
+    reconnectCount.current += 1;
+    setStatus("connecting");
+    setMessage(t.reconnecting);
+    reconnectTimer.current = window.setTimeout(async () => {
+      if (userStopped.current) return;
+      try {
+        await connect();
+      } catch {
+        retryConnection(1200);
+      }
+    }, delay);
+  }
+  function detachConnection() {
     processor.current?.disconnect();
     processor.current = null;
     if (timer.current !== null) clearInterval(timer.current);
     timer.current = null;
+    socket.current = null;
+  }
+  function finishSession() {
+    pausedRef.current = false;
+    setStatus("idle");
+    detachConnection();
   }
   function stop() {
     userStopped.current = true;
-    socket.current?.send(JSON.stringify({ type: "stop" }));
-    setStatus("stopping");
+    if (reconnectTimer.current !== null) clearTimeout(reconnectTimer.current);
+    reconnectTimer.current = null;
+    if (socket.current?.readyState === WebSocket.OPEN) {
+      socket.current.send(JSON.stringify({ type: "stop" }));
+      setStatus("stopping");
+    } else {
+      socket.current?.close();
+      finishSession();
+    }
   }
   function togglePause() {
-    const ws=socket.current;
-    if(!ws||ws.readyState!==WebSocket.OPEN)return;
-    ws.send(JSON.stringify({type:status==="paused"?"resume":"pause"}));
+    const ws = socket.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ type: status === "paused" ? "resume" : "pause" }));
   }
   function shutdownMedia() {
     if (analyserFrame.current !== null)
@@ -350,6 +417,8 @@ export function Interpreter({
     setLevel(0);
   }
   function shutdown() {
+    userStopped.current = true;
+    if (reconnectTimer.current !== null) clearTimeout(reconnectTimer.current);
     socket.current?.close();
     processor.current?.disconnect();
     if (timer.current !== null) clearInterval(timer.current);
@@ -358,7 +427,9 @@ export function Interpreter({
   async function testSound() {
     await prepare();
     const ctx = context.current!;
-    const response = await fetch("/audio/output-test.mp3", { cache: "force-cache" });
+    const response = await fetch("/audio/output-test.mp3", {
+      cache: "force-cache",
+    });
     if (!response.ok) throw new Error(t.closed);
     const buffer = await ctx.decodeAudioData(await response.arrayBuffer());
     const source = ctx.createBufferSource();
@@ -484,8 +555,20 @@ export function Interpreter({
         </button>
       ) : (
         <div className="live-actions">
-          {(status === "live" || status === "paused") && <button className="secondary" onClick={togglePause}>{status === "paused" ? <Play /> : <Pause />}{status === "paused" ? t.resume : t.pause}</button>}
-          <button className="stop-button" onClick={stop} disabled={status === "stopping"}><Square />{status === "stopping" ? t.stopping : t.stop}</button>
+          {(status === "live" || status === "paused") && (
+            <button className="secondary" onClick={togglePause}>
+              {status === "paused" ? <Play /> : <Pause />}
+              {status === "paused" ? t.resume : t.pause}
+            </button>
+          )}
+          <button
+            className="stop-button"
+            onClick={stop}
+            disabled={status === "stopping"}
+          >
+            <Square />
+            {status === "stopping" ? t.stopping : t.stop}
+          </button>
         </div>
       )}
       <p className={`status-line ${status}`}>

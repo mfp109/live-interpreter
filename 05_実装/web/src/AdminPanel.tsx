@@ -22,18 +22,55 @@ type Member = {
   paid_seconds: number;
   created_at: string;
 };
+type Payment = {
+  id: string;
+  email: string;
+  code: string;
+  amount_minor: number;
+  refunded_minor: number;
+  currency: string;
+  status: string;
+  created_at: string;
+};
+type Session = {
+  id: string;
+  email: string;
+  source_language: string;
+  target_language: string;
+  status: string;
+  trial_seconds_used: number;
+  paid_seconds_used: number;
+  created_at: string;
+};
+type Audit = {
+  id: number;
+  admin_email: string;
+  action: string;
+  target_type: string | null;
+  target_id: string | null;
+  created_at: string;
+};
 export function AdminPanel({ csrf }: { csrf: string }) {
   const [stats, setStats] = useState<Stats | null>(null);
   const [users, setUsers] = useState<Member[]>([]);
   const [query, setQuery] = useState("");
   const [message, setMessage] = useState("");
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [audit, setAudit] = useState<Audit[]>([]);
   async function load() {
-    const [dashboard, members] = await Promise.all([
-      api<{ stats: Stats }>("admin/dashboard.php"),
+    const [dashboard, members, logs] = await Promise.all([
+      api<{ stats: Stats; payments: Payment[]; sessions: Session[] }>(
+        "admin/dashboard.php",
+      ),
       api<{ users: Member[] }>("admin/users.php"),
+      api<{ logs: Audit[] }>("admin/audit.php"),
     ]);
     setStats(dashboard.stats);
     setUsers(members.users);
+    setPayments(dashboard.payments);
+    setSessions(dashboard.sessions);
+    setAudit(logs.logs);
   }
   useEffect(() => {
     load().catch((e) => setMessage(e.message));
@@ -89,6 +126,38 @@ export function AdminPanel({ csrf }: { csrf: string }) {
       setMessage(e instanceof Error ? e.message : "変更できませんでした。");
     }
   }
+  async function refund(payment: Payment) {
+    const available =
+      Number(payment.amount_minor) - Number(payment.refunded_minor);
+    if (available <= 0) return;
+    const amount = prompt(
+      `返金額（円、返金可能 ¥${available.toLocaleString()}）`,
+      String(available),
+    );
+    if (amount === null) return;
+    const reason = prompt("返金理由（5文字以上）");
+    if (!reason) return;
+    try {
+      await api(
+        "admin/refund-payment.php",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            payment_id: payment.id,
+            amount_minor: Math.round(Number(amount)),
+            reason,
+          }),
+        },
+        csrf,
+      );
+      await load();
+      setMessage("Stripeへ返金を申請しました。反映後に残高を自動調整します。");
+    } catch (e) {
+      setMessage(
+        e instanceof Error ? e.message : "返金を申請できませんでした。",
+      );
+    }
+  }
   return (
     <section className="admin-panel">
       <div className="app-heading">
@@ -112,7 +181,10 @@ export function AdminPanel({ csrf }: { csrf: string }) {
           <article>
             <span>概算粗利益</span>
             <strong>¥{stats.gross_profit_estimate_jpy.toLocaleString()}</strong>
-            <small>API ¥{stats.openai_cost_estimate_jpy.toLocaleString()} / 決済 ¥{stats.stripe_fee_estimate_jpy.toLocaleString()}</small>
+            <small>
+              API ¥{stats.openai_cost_estimate_jpy.toLocaleString()} / 決済 ¥
+              {stats.stripe_fee_estimate_jpy.toLocaleString()}
+            </small>
           </article>
           <article>
             <span>利用済み</span>
@@ -165,6 +237,107 @@ export function AdminPanel({ csrf }: { csrf: string }) {
                     {user.status === "active" ? "停止" : "再開"}
                   </button>
                 </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <h3>直近の決済</h3>
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>会員</th>
+              <th>商品</th>
+              <th>金額</th>
+              <th>状態</th>
+              <th>日時</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {payments.map((p) => (
+              <tr key={p.id}>
+                <td>{p.email}</td>
+                <td>{p.code}</td>
+                <td>
+                  ¥{Number(p.amount_minor).toLocaleString()}
+                  <small>
+                    返金済 ¥{Number(p.refunded_minor).toLocaleString()}
+                  </small>
+                </td>
+                <td>{p.status}</td>
+                <td>{new Date(p.created_at).toLocaleString()}</td>
+                <td>
+                  <button
+                    disabled={
+                      Number(p.amount_minor) <= Number(p.refunded_minor) ||
+                      p.status === "disputed"
+                    }
+                    onClick={() => refund(p)}
+                  >
+                    返金
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <h3>直近の通訳セッション</h3>
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>会員</th>
+              <th>言語</th>
+              <th>利用時間</th>
+              <th>状態</th>
+              <th>日時</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sessions.map((s) => (
+              <tr key={s.id}>
+                <td>{s.email}</td>
+                <td>
+                  {s.source_language.toUpperCase()} →{" "}
+                  {s.target_language.toUpperCase()}
+                </td>
+                <td>
+                  {formatTime(
+                    Number(s.trial_seconds_used) + Number(s.paid_seconds_used),
+                  )}
+                </td>
+                <td>{s.status}</td>
+                <td>{new Date(s.created_at).toLocaleString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <h3>管理操作監査ログ</h3>
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>管理者</th>
+              <th>操作</th>
+              <th>対象</th>
+              <th>日時</th>
+            </tr>
+          </thead>
+          <tbody>
+            {audit.map((l) => (
+              <tr key={l.id}>
+                <td>{l.admin_email}</td>
+                <td>{l.action}</td>
+                <td>
+                  {l.target_type
+                    ? `${l.target_type}: ${l.target_id || ""}`
+                    : "—"}
+                </td>
+                <td>{new Date(l.created_at).toLocaleString()}</td>
               </tr>
             ))}
           </tbody>

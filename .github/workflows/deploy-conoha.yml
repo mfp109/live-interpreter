@@ -33,6 +33,7 @@ jobs:
           php tests/stripe_signature_test.php
           php tests/gateway_signature_test.php
           php tests/totp_test.php
+          php tests/refund_calculation_test.php
       - name: Test realtime gateway
         working-directory: 05_実装/gateway
         run: |
