@@ -54,6 +54,9 @@ wss.on("connection", (client, request) => {
   let claims;
   let upstream;
   let startedAt = 0;
+  let activeStartedAt = 0;
+  let activeElapsedMs = 0;
+  let paused = false;
   let settledSeconds = 0;
   let sequence = 0;
   let chargeQueue = Promise.resolve();
@@ -74,8 +77,9 @@ wss.on("connection", (client, request) => {
   const charge = (requestedFinal = false) => {
     chargeQueue = chargeQueue.then(async () => {
       if (!claims || !startedAt || closing && !requestedFinal) return;
-      const elapsed = Math.floor((Date.now() - startedAt) / 1000);
-      const final = requestedFinal || elapsed >= 7200;
+      const elapsed = Math.floor((activeElapsedMs + (activeStartedAt ? Date.now() - activeStartedAt : 0)) / 1000);
+      const limitReached = elapsed >= 7200;
+      const final = requestedFinal || limitReached;
       const delta = Math.min(30, Math.max(0, elapsed - settledSeconds));
       if (delta === 0 && !final) return;
       try {
@@ -83,6 +87,7 @@ wss.on("connection", (client, request) => {
         settledSeconds += result.consumed_seconds || 0;
         if (client.readyState === WebSocket.OPEN) client.send(JSON.stringify({ type: "billing", remaining_seconds: result.remaining_seconds, consumed_seconds: result.consumed_seconds || 0 }));
         if (result.stop) closeBoth(4002, "balance_exhausted");
+        else if (limitReached) closeBoth(4000, "session_limit");
       } catch {
         closeBoth(1011, "billing_unavailable");
       }
@@ -127,9 +132,19 @@ wss.on("connection", (client, request) => {
       upstream.on("close", () => { if (!closing) closeBoth(1011, "translation_closed"); });
       return;
     }
-    if (event.type === "audio" && typeof event.audio === "string" && event.audio.length <= 180000 && upstream?.readyState === WebSocket.OPEN) {
+    if (event.type === "audio" && typeof event.audio === "string" && event.audio.length <= 180000 && upstream?.readyState === WebSocket.OPEN && !paused) {
       if (!startedAt) startedAt = Date.now();
+      if (!activeStartedAt) activeStartedAt = Date.now();
       upstream.send(JSON.stringify({ type: "session.input_audio_buffer.append", audio: event.audio }));
+    } else if (event.type === "pause" && !paused) {
+      if (activeStartedAt) activeElapsedMs += Date.now() - activeStartedAt;
+      activeStartedAt = 0;
+      paused = true;
+      charge(false).finally(() => { if (client.readyState === WebSocket.OPEN) client.send(JSON.stringify({ type: "paused" })); });
+    } else if (event.type === "resume" && paused) {
+      activeStartedAt = 0;
+      paused = false;
+      if (client.readyState === WebSocket.OPEN) client.send(JSON.stringify({ type: "resumed" }));
     } else if (event.type === "stop") {
       charge(true).finally(() => closeBoth());
     }

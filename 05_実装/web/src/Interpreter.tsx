@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Headphones, Mic, Square, Volume2, VolumeX } from "lucide-react";
+import { Headphones, Mic, Pause, Play, Square, Volume2, VolumeX } from "lucide-react";
 import { api, ApiError, formatTime, Wallet } from "./api";
 
 type Locale = "ja" | "en" | "zh-CN";
@@ -16,9 +16,12 @@ const ui = {
     unmute: "ミュート解除",
     start: "通訳を開始",
     stop: "通訳を終了",
+    pause: "一時停止",
+    resume: "再開",
     stopping: "終了処理中…",
     idle: "○ 待機中",
     live: "● 通訳中 — 話し続けてください",
+    paused: "Ⅱ 一時停止中 — 時間は消費されません",
     headphones: "イヤホン推奨",
     same: "入力言語と出力言語を別にしてください。",
     empty: "通訳時間がありません。",
@@ -37,9 +40,12 @@ const ui = {
     unmute: "Unmute",
     start: "Start interpreting",
     stop: "Stop interpreting",
+    pause: "Pause",
+    resume: "Resume",
     stopping: "Stopping…",
     idle: "○ Ready",
     live: "● Live — keep speaking",
+    paused: "Ⅱ Paused — no time is being used",
     headphones: "Headphones recommended",
     same: "Choose different input and output languages.",
     empty: "No interpretation time remains.",
@@ -58,9 +64,12 @@ const ui = {
     unmute: "取消静音",
     start: "开始口译",
     stop: "结束口译",
+    pause: "暂停",
+    resume: "继续",
     stopping: "正在结束…",
     idle: "○ 待机",
     live: "● 口译中 — 请继续说话",
+    paused: "Ⅱ 已暂停 — 不会扣除时间",
     headphones: "建议使用耳机",
     same: "请选择不同的输入和输出语言。",
     empty: "没有剩余口译时间。",
@@ -115,7 +124,7 @@ export function Interpreter({
   const [source, setSource] = useState("ja");
   const [target, setTarget] = useState("en");
   const [status, setStatus] = useState<
-    "idle" | "connecting" | "live" | "stopping"
+    "idle" | "connecting" | "live" | "paused" | "stopping"
   >("idle");
   const [level, setLevel] = useState(0);
   const [remaining, setRemaining] = useState(
@@ -137,6 +146,7 @@ export function Interpreter({
   const mutedRef = useRef(muted);
   const timer = useRef<number | null>(null);
   const userStopped = useRef(false);
+  const pausedRef = useRef(false);
   const autoPrepareStarted = useRef(false);
   useEffect(() => {
     setRemaining(Number(wallet.trial_seconds) + Number(wallet.paid_seconds));
@@ -264,7 +274,7 @@ export function Interpreter({
           setStatus("live");
           setElapsed(0);
           timer.current = window.setInterval(
-            () => setElapsed((value) => value + 1),
+            () => { if (!pausedRef.current) setElapsed((value) => value + 1); },
             1000,
           );
           const ctx = context.current!;
@@ -272,7 +282,7 @@ export function Interpreter({
           const proc = ctx.createScriptProcessor(4096, 1, 1);
           processor.current = proc;
           proc.onaudioprocess = (e) => {
-            if (ws.readyState === WebSocket.OPEN)
+            if (ws.readyState === WebSocket.OPEN && !pausedRef.current)
               ws.send(
                 JSON.stringify({
                   type: "audio",
@@ -287,6 +297,8 @@ export function Interpreter({
           proc.connect(ctx.destination);
         }
         if (data.type === "audio") play(data.delta);
+        if (data.type === "paused") { pausedRef.current = true; setStatus("paused"); }
+        if (data.type === "resumed") { pausedRef.current = false; setStatus("live"); }
         if (data.type === "billing") {
           setRemaining(data.remaining_seconds);
           onBalance(data.remaining_seconds);
@@ -310,6 +322,7 @@ export function Interpreter({
     }
   }
   function finishSession() {
+    pausedRef.current = false;
     setStatus("idle");
     processor.current?.disconnect();
     processor.current = null;
@@ -320,6 +333,11 @@ export function Interpreter({
     userStopped.current = true;
     socket.current?.send(JSON.stringify({ type: "stop" }));
     setStatus("stopping");
+  }
+  function togglePause() {
+    const ws=socket.current;
+    if(!ws||ws.readyState!==WebSocket.OPEN)return;
+    ws.send(JSON.stringify({type:status==="paused"?"resume":"pause"}));
   }
   function shutdownMedia() {
     if (analyserFrame.current !== null)
@@ -465,17 +483,13 @@ export function Interpreter({
           {t.start}
         </button>
       ) : (
-        <button
-          className="stop-button"
-          onClick={stop}
-          disabled={status === "stopping"}
-        >
-          <Square />
-          {status === "stopping" ? t.stopping : t.stop}
-        </button>
+        <div className="live-actions">
+          {(status === "live" || status === "paused") && <button className="secondary" onClick={togglePause}>{status === "paused" ? <Play /> : <Pause />}{status === "paused" ? t.resume : t.pause}</button>}
+          <button className="stop-button" onClick={stop} disabled={status === "stopping"}><Square />{status === "stopping" ? t.stopping : t.stop}</button>
+        </div>
       )}
       <p className={`status-line ${status}`}>
-        {status === "live" ? t.live : t.idle}
+        {status === "live" ? t.live : status === "paused" ? t.paused : t.idle}
         <span>
           <Headphones size={15} />
           {t.headphones}

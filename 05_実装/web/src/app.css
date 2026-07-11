@@ -286,6 +286,19 @@ footer a {
   margin-top: 25px;
   padding: 18px;
 }
+.live-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 25px;
+}
+.live-actions .stop-button {
+  width: auto;
+  margin-top: 0;
+}
+.live-actions .secondary {
+  justify-content: center;
+}
 .stop-button {
   display: flex;
   gap: 8px;
@@ -304,6 +317,10 @@ footer a {
 }
 .status-line.live {
   color: #17825e;
+  font-weight: 800;
+}
+.status-line.paused {
+  color: #9b6a22;
   font-weight: 800;
 }
 .status-line span {
