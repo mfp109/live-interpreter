@@ -1,0 +1,17 @@
+[Unit]
+Description=ShalomWorks Live Interpreter Realtime Gateway
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/live-interpreter-gateway
+EnvironmentFile=/etc/live-interpreter-gateway.env
+ExecStartPre=/usr/bin/docker build -t live-interpreter-gateway:local .
+ExecStart=/usr/bin/docker run --rm --name live-interpreter-gateway --env-file /etc/live-interpreter-gateway.env -p 127.0.0.1:8787:8787 live-interpreter-gateway:local
+ExecStop=/usr/bin/docker stop live-interpreter-gateway
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

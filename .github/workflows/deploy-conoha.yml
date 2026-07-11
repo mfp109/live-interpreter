@@ -1,0 +1,56 @@
+name: Deploy web app to ConoHa WING
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  test-and-deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 05_実装/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: 05_実装/web/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Build frontend
+        run: npm run build
+      - name: Check PHP syntax
+        run: find api -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: Run security unit tests
+        run: |
+          php tests/stripe_signature_test.php
+          php tests/gateway_signature_test.php
+          php tests/totp_test.php
+      - name: Assemble deploy package
+        run: |
+          mkdir -p deploy/api
+          cp -R dist/. deploy/
+          rsync -a --exclude='config.php' --exclude='config.sample.php' api/ deploy/api/
+      - name: Deploy to ConoHa WING
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
+        with:
+          server: ${{ secrets.CONOHA_FTP_SERVER }}
+          username: ${{ secrets.CONOHA_FTP_USERNAME }}
+          password: ${{ secrets.CONOHA_FTP_PASSWORD }}
+          protocol: ftps
+          local-dir: 05_実装/web/deploy/
+          server-dir: ${{ secrets.CONOHA_FTP_SERVER_DIR }}
+          dangerous-clean-slate: false
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/config.php
+            **/database/**
+            **/tests/**

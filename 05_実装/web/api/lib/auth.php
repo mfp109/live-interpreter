@@ -33,6 +33,23 @@ function require_user(array $config): array
     return $user;
 }
 
+function require_admin(array $config): array
+{
+    $user = require_user($config);
+    if ($user['role'] !== 'admin' || ($_SESSION['admin_2fa_verified'] ?? false) !== true) {
+        json_error('ADMIN_REQUIRED', 'Administrator authentication required.', 403);
+    }
+    return $user;
+}
+
+function audit_admin(array $config, string $adminId, string $action, ?string $targetType = null, ?string $targetId = null): void
+{
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+    $ipHash = hash('sha256', $ip . '|' . ($config['gateway_shared_secret'] ?? 'audit'));
+    $stmt = db($config)->prepare('INSERT INTO admin_audit_logs (admin_user_id,action,target_type,target_id,request_id,ip_hash) VALUES (?,?,?,?,?,?)');
+    $stmt->execute([$adminId,$action,$targetType,$targetId,$_SERVER['HTTP_X_REQUEST_ID'] ?? null,$ipHash]);
+}
+
 function issue_csrf_token(): string
 {
     if (!isset($_SESSION['csrf'])) $_SESSION['csrf'] = bin2hex(random_bytes(32));

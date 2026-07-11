@@ -17,6 +17,7 @@ return [
     'openai_api_key' => 'CHANGE_ME',
     'gateway_shared_secret' => 'CHANGE_ME',
     'gateway_url' => 'https://CHANGE_ME.example.com',
+    'admin_totp_secret' => 'CHANGE_ME',
     'mail' => [
         'from' => 'CHANGE_ME',
         'transport' => 'mail',
