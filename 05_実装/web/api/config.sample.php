@@ -16,6 +16,7 @@ return [
     'stripe_webhook_secret' => 'CHANGE_ME',
     'openai_api_key' => 'CHANGE_ME',
     'gateway_shared_secret' => 'CHANGE_ME',
+    'gateway_url' => 'https://CHANGE_ME.example.com',
     'mail' => [
         'from' => 'CHANGE_ME',
         'transport' => 'mail',
