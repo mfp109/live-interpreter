@@ -328,6 +328,43 @@ footer a {
   align-items: center;
   gap: 6px;
 }
+.continue-overlay {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(12 35 34 / 72%);
+}
+.continue-dialog {
+  width: min(100%, 480px);
+  padding: 30px;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgb(0 0 0 / 28%);
+  text-align: center;
+}
+.continue-dialog h3 {
+  margin: 0 0 12px;
+  font-size: 26px;
+}
+.continue-dialog > strong {
+  display: block;
+  margin: 18px 0;
+  color: #994f43;
+}
+.continue-dialog > div {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.continue-dialog .primary,
+.continue-dialog .stop-button {
+  width: auto;
+  margin: 0;
+  padding: 14px 16px;
+}
 .account-products {
   max-width: 1160px;
   margin: 65px auto;

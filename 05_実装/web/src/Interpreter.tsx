@@ -36,6 +36,12 @@ const ui = {
     closed: "通訳接続が終了しました。",
     reconnecting: "接続が切れました。再接続しています…",
     used: "今回の利用時間",
+    continueTitle: "通訳を続けますか？",
+    continueText: "まもなく10分です。操作がなければ自動的に通訳を終了します。",
+    continueButton: "通訳を続ける",
+    endButton: "今すぐ終了",
+    autoStop: "安全のため、10分で通訳を自動終了しました。",
+    secondsLeft: "自動終了まで",
   },
   en: {
     title: "Live voice interpretation",
@@ -61,6 +67,12 @@ const ui = {
     closed: "The interpretation connection ended.",
     reconnecting: "Connection lost. Reconnecting…",
     used: "This session",
+    continueTitle: "Continue interpreting?",
+    continueText: "You are approaching 10 minutes. Interpretation will stop automatically if there is no response.",
+    continueButton: "Continue interpreting",
+    endButton: "Stop now",
+    autoStop: "Interpretation stopped automatically after 10 minutes for safety.",
+    secondsLeft: "Automatic stop in",
   },
   "zh-CN": {
     title: "实时语音口译",
@@ -86,6 +98,12 @@ const ui = {
     closed: "口译连接已结束。",
     reconnecting: "连接中断，正在重新连接…",
     used: "本次使用",
+    continueTitle: "要继续口译吗？",
+    continueText: "即将达到10分钟。如无操作，口译将自动结束。",
+    continueButton: "继续口译",
+    endButton: "立即结束",
+    autoStop: "为防止忘记关闭，口译已在10分钟时自动结束。",
+    secondsLeft: "自动结束还剩",
   },
 } as const;
 const languages = [
@@ -147,6 +165,7 @@ export function Interpreter({
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [deviceId, setDeviceId] = useState("");
   const [elapsed, setElapsed] = useState(0);
+  const [continuePrompt, setContinuePrompt] = useState(false);
   const stream = useRef<MediaStream | null>(null);
   const context = useRef<AudioContext | null>(null);
   const processor = useRef<ScriptProcessorNode | null>(null);
@@ -162,6 +181,9 @@ export function Interpreter({
   const remainingRef = useRef(remaining);
   const reconnectTimer = useRef<number | null>(null);
   const autoPrepareStarted = useRef(false);
+  const elapsedRef = useRef(0);
+  const warningAt = useRef(9 * 60);
+  const stopAt = useRef(10 * 60);
   useEffect(() => {
     setRemaining(Number(wallet.trial_seconds) + Number(wallet.paid_seconds));
   }, [wallet]);
@@ -174,6 +196,9 @@ export function Interpreter({
   useEffect(() => {
     mutedRef.current = muted;
   }, [muted]);
+  useEffect(() => {
+    elapsedRef.current = elapsed;
+  }, [elapsed]);
   useEffect(() => {
     if (autoPrepareStarted.current) return;
     autoPrepareStarted.current = true;
@@ -261,6 +286,10 @@ export function Interpreter({
       await prepare();
       reconnectCount.current = 0;
       setElapsed(0);
+      elapsedRef.current = 0;
+      warningAt.current = 9 * 60;
+      stopAt.current = 10 * 60;
+      setContinuePrompt(false);
       setStatus("connecting");
       await connect();
     } catch (error) {
@@ -307,7 +336,17 @@ export function Interpreter({
         setMessage("");
         if (timer.current !== null) clearInterval(timer.current);
         timer.current = window.setInterval(() => {
-          if (!pausedRef.current) setElapsed((value) => value + 1);
+          if (!pausedRef.current) {
+            const next = elapsedRef.current + 1;
+            elapsedRef.current = next;
+            setElapsed(next);
+            if (next === warningAt.current) setContinuePrompt(true);
+            if (next >= stopAt.current) {
+              setContinuePrompt(false);
+              setMessage(t.autoStop);
+              stop();
+            }
+          }
         }, 1000);
         const ctx = context.current!;
         const src = ctx.createMediaStreamSource(stream.current!);
@@ -386,11 +425,15 @@ export function Interpreter({
   }
   function finishSession() {
     pausedRef.current = false;
+    setContinuePrompt(false);
     setStatus("idle");
     detachConnection();
   }
   function stop() {
     userStopped.current = true;
+    setContinuePrompt(false);
+    if (timer.current !== null) clearInterval(timer.current);
+    timer.current = null;
     if (reconnectTimer.current !== null) clearTimeout(reconnectTimer.current);
     reconnectTimer.current = null;
     if (socket.current?.readyState === WebSocket.OPEN) {
@@ -405,6 +448,11 @@ export function Interpreter({
     const ws = socket.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     ws.send(JSON.stringify({ type: status === "paused" ? "resume" : "pause" }));
+  }
+  function continueInterpretation() {
+    warningAt.current = elapsedRef.current + 9 * 60;
+    stopAt.current = elapsedRef.current + 10 * 60;
+    setContinuePrompt(false);
   }
   function shutdownMedia() {
     if (analyserFrame.current !== null)
@@ -579,6 +627,25 @@ export function Interpreter({
         </span>
       </p>
       {message && <p className="form-message">{message}</p>}
+      {continuePrompt && (
+        <div className="continue-overlay" role="dialog" aria-modal="true">
+          <div className="continue-dialog">
+            <h3>{t.continueTitle}</h3>
+            <p>{t.continueText}</p>
+            <strong>
+              {t.secondsLeft} {Math.max(0, stopAt.current - elapsed)}s
+            </strong>
+            <div>
+              <button className="primary" onClick={continueInterpretation}>
+                {t.continueButton}
+              </button>
+              <button className="stop-button" onClick={stop}>
+                {t.endButton}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
