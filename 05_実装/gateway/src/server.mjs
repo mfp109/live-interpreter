@@ -12,7 +12,7 @@ const config = {
 };
 
 function configured() {
-  return config.openaiKey && config.openaiKey !== "CHANGE_ME" && config.sharedSecret && config.sharedSecret !== "CHANGE_ME" && config.apiBase && config.allowedOrigin;
+  return Boolean(config.openaiKey && config.openaiKey !== "CHANGE_ME" && config.sharedSecret && config.sharedSecret !== "CHANGE_ME" && config.apiBase && config.allowedOrigin);
 }
 
 async function settle(sessionId, sequence, seconds, final = false) {
