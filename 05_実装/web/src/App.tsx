@@ -47,10 +47,10 @@ const copy = {
     paid: "有料",
     addTime: "通訳時間を追加",
     logout: "ログアウト",
-    demoPlaceholder: "実演動画を公開前に配置します",
+    demoPlaceholder: "日本語→英語の音声付きデモ",
     demoTitle: "話し続けても、通訳は止まりません。",
     demoText:
-      "実際の日本語音声が低遅延で英語音声へ変わる様子を、公開前の実演収録で掲載します。",
+      "日本語の話し声が英語音声として届く利用イメージを、音声付きの短いデモで確認できます。",
     speakTitle: "話す",
     speakText: "マイクと入力言語を選び、自然に話します。",
     interpretTitle: "通訳",
@@ -101,10 +101,10 @@ const copy = {
     paid: "Paid",
     addTime: "Add interpretation time",
     logout: "Sign out",
-    demoPlaceholder: "Demo video will be added before launch",
+    demoPlaceholder: "Japanese-to-English audio demo",
     demoTitle: "Keep speaking. Interpretation keeps moving.",
     demoText:
-      "A real recording will show Japanese speech becoming English audio with low latency.",
+      "Watch and hear a short demonstration of Japanese speech reaching listeners as English audio.",
     speakTitle: "Speak",
     speakText:
       "Choose your microphone and input language, then speak naturally.",
@@ -158,9 +158,9 @@ const copy = {
     paid: "已购买",
     addTime: "添加口译时间",
     logout: "退出登录",
-    demoPlaceholder: "正式发布前将添加演示视频",
+    demoPlaceholder: "日语转英语音频演示",
     demoTitle: "持续说话，口译不会停止。",
-    demoText: "真实演示将展示日语语音如何低延迟转换为英语语音。",
+    demoText: "通过带声音的短片，了解日语语音转换为英语语音的使用方式。",
     speakTitle: "说话",
     speakText: "选择麦克风和输入语言，然后自然说话。",
     interpretTitle: "口译",
@@ -546,9 +546,10 @@ export function App() {
             <span>CUSTOMER SUPPORT</span>
           </section>
           <section id="demo" className="demo-section">
-            <div className="demo-placeholder">
-              <Play size={42} />
-              <strong>Real-time interpretation demo</strong>
+            <div className="demo-video-wrap">
+              <video className="demo-video" controls playsInline preload="metadata">
+                <source src="/media/live-demo.mp4" type="video/mp4" />
+              </video>
               <span>{t.demoPlaceholder}</span>
             </div>
             <div>

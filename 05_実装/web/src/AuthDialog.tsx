@@ -10,6 +10,7 @@ const text = {
     email: "メールアドレス",
     password: "パスワード",
     accept: "利用規約とプライバシーポリシーに同意します",
+    age: "18歳未満の方は、保護者の同意を得て登録してください。",
     busy: "処理中…",
     registerButton: "15分無料で登録",
     forgot: "パスワードを忘れた方",
@@ -32,6 +33,7 @@ const text = {
     email: "Email address",
     password: "Password",
     accept: "I agree to the Terms and Privacy Policy",
+    age: "If you are under 18, register only with a parent or guardian's consent.",
     busy: "Working…",
     registerButton: "Create account — 15 min free",
     forgot: "Forgot password",
@@ -54,6 +56,7 @@ const text = {
     email: "电子邮箱",
     password: "密码",
     accept: "我同意使用条款和隐私政策",
+    age: "未满18岁者请在取得父母或监护人同意后注册。",
     busy: "处理中…",
     registerButton: "免费注册并获得15分钟",
     forgot: "忘记密码",
@@ -223,15 +226,18 @@ export function AuthDialog({
           />
         </label>
         {kind === "register" && (
-          <label className="check">
-            <input
-              type="checkbox"
-              checked={accepted}
-              onChange={(e) => setAccepted(e.target.checked)}
-              required
-            />
-            {t.accept}
-          </label>
+          <>
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={accepted}
+                onChange={(e) => setAccepted(e.target.checked)}
+                required
+              />
+              {t.accept}
+            </label>
+            <small className="age-notice">{t.age}</small>
+          </>
         )}
         <button className="primary auth-submit" disabled={busy}>
           {busy ? t.busy : kind === "login" ? t.login : t.registerButton}

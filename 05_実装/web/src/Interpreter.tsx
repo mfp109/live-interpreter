@@ -137,6 +137,7 @@ export function Interpreter({
   const mutedRef = useRef(muted);
   const timer = useRef<number | null>(null);
   const userStopped = useRef(false);
+  const autoPrepareStarted = useRef(false);
   useEffect(() => {
     setRemaining(Number(wallet.trial_seconds) + Number(wallet.paid_seconds));
   }, [wallet]);
@@ -146,6 +147,18 @@ export function Interpreter({
   useEffect(() => {
     mutedRef.current = muted;
   }, [muted]);
+  useEffect(() => {
+    if (autoPrepareStarted.current) return;
+    autoPrepareStarted.current = true;
+    navigator.permissions
+      ?.query({ name: "microphone" as PermissionName })
+      .then((permission) => {
+        if (permission.state === "granted") return prepare();
+      })
+      .catch(() => {
+        // Permission API support varies; the explicit enable button remains available.
+      });
+  }, []);
   useEffect(() => () => shutdown(), []);
   async function prepare(force = false, selectedDevice = deviceId) {
     if (stream.current && !force) return;
@@ -327,13 +340,15 @@ export function Interpreter({
   async function testSound() {
     await prepare();
     const ctx = context.current!;
-    const oscillator = ctx.createOscillator();
+    const response = await fetch("/audio/output-test.mp3", { cache: "force-cache" });
+    if (!response.ok) throw new Error(t.closed);
+    const buffer = await ctx.decodeAudioData(await response.arrayBuffer());
+    const source = ctx.createBufferSource();
     const gain = ctx.createGain();
-    oscillator.frequency.value = 440;
-    gain.gain.value = 0.12 * (muted ? 0 : volume);
-    oscillator.connect(gain).connect(ctx.destination);
-    oscillator.start();
-    oscillator.stop(ctx.currentTime + 1.2);
+    gain.gain.value = mutedRef.current ? 0 : volumeRef.current;
+    source.buffer = buffer;
+    source.connect(gain).connect(ctx.destination);
+    source.start();
   }
   async function changeDevice(value: string) {
     setDeviceId(value);

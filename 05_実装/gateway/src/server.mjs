@@ -56,7 +56,7 @@ wss.on("connection", (client, request) => {
   let startedAt = 0;
   let settledSeconds = 0;
   let sequence = 0;
-  let settling = false;
+  let chargeQueue = Promise.resolve();
   let closing = false;
   const authTimer = setTimeout(() => closeBoth(1008, "authentication_timeout"), 10000);
   authTimer.unref();
@@ -71,21 +71,23 @@ wss.on("connection", (client, request) => {
     }, 1200).unref();
   };
 
-  const charge = async (final = false) => {
-    if (!claims || !startedAt || settling || closing && !final) return;
-    const elapsed = Math.floor((Date.now() - startedAt) / 1000);
-    if (elapsed >= 7200) final = true;
-    const delta = Math.min(30, Math.max(0, elapsed - settledSeconds));
-    if (delta === 0 && !final) return;
-    settling = true;
-    try {
-      const result = await settle(claims.sid, ++sequence, delta, final);
-      settledSeconds += result.consumed_seconds || 0;
-      client.send(JSON.stringify({ type: "billing", remaining_seconds: result.remaining_seconds, consumed_seconds: result.consumed_seconds || 0 }));
-      if (result.stop) closeBoth(4002, "balance_exhausted");
-    } catch {
-      closeBoth(1011, "billing_unavailable");
-    } finally { settling = false; }
+  const charge = (requestedFinal = false) => {
+    chargeQueue = chargeQueue.then(async () => {
+      if (!claims || !startedAt || closing && !requestedFinal) return;
+      const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+      const final = requestedFinal || elapsed >= 7200;
+      const delta = Math.min(30, Math.max(0, elapsed - settledSeconds));
+      if (delta === 0 && !final) return;
+      try {
+        const result = await settle(claims.sid, ++sequence, delta, final);
+        settledSeconds += result.consumed_seconds || 0;
+        if (client.readyState === WebSocket.OPEN) client.send(JSON.stringify({ type: "billing", remaining_seconds: result.remaining_seconds, consumed_seconds: result.consumed_seconds || 0 }));
+        if (result.stop) closeBoth(4002, "balance_exhausted");
+      } catch {
+        closeBoth(1011, "billing_unavailable");
+      }
+    });
+    return chargeQueue;
   };
 
   const billingTimer = setInterval(() => charge(false), 5000);
@@ -139,7 +141,7 @@ wss.on("connection", (client, request) => {
     connectionsByIp.set(ip, Math.max(0, (connectionsByIp.get(ip) || 1) - 1));
     if (connectionsByIp.get(ip) === 0) connectionsByIp.delete(ip);
     if (claims?.sid) activeSessions.delete(claims.sid);
-    if (claims && startedAt && !closing) charge(true).catch(() => {});
+    if (claims && startedAt) charge(true).catch(() => {});
     if (upstream?.readyState < WebSocket.CLOSING) upstream.close();
   });
   client.on("error", () => closeBoth(1011, "client_error"));

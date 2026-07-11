@@ -9,6 +9,9 @@ type Stats = {
   trial_seconds_outstanding: number;
   seconds_used: number;
   sessions_today: number;
+  stripe_fee_estimate_jpy: number;
+  openai_cost_estimate_jpy: number;
+  gross_profit_estimate_jpy: number;
 };
 type Member = {
   id: string;
@@ -105,6 +108,11 @@ export function AdminPanel({ csrf }: { csrf: string }) {
           <article>
             <span>売上</span>
             <strong>¥{stats.revenue_jpy.toLocaleString()}</strong>
+          </article>
+          <article>
+            <span>概算粗利益</span>
+            <strong>¥{stats.gross_profit_estimate_jpy.toLocaleString()}</strong>
+            <small>API ¥{stats.openai_cost_estimate_jpy.toLocaleString()} / 決済 ¥{stats.stripe_fee_estimate_jpy.toLocaleString()}</small>
           </article>
           <article>
             <span>利用済み</span>

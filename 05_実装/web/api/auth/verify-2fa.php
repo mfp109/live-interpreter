@@ -16,5 +16,7 @@ session_regenerate_id(true);
     $_SESSION['user_id'] = $pending;
     $_SESSION['auth_version'] = (int)($_SESSION['pending_admin_auth_version'] ?? -1);
 $_SESSION['admin_2fa_verified'] = true;
+$_SESSION['signed_in_at'] = time();
+$_SESSION['last_seen_at'] = time();
     unset($_SESSION['pending_admin_user_id'], $_SESSION['pending_admin_auth_version']);
 json_response(['ok'=>true,'csrf_token'=>issue_csrf_token()]);

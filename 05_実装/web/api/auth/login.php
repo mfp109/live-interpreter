@@ -28,4 +28,5 @@ if ($user['role'] === 'admin') {
 $_SESSION['user_id'] = $user['id'];
 $_SESSION['auth_version'] = (int)$user['auth_version'];
 $_SESSION['signed_in_at'] = time();
+$_SESSION['last_seen_at'] = time();
 json_response(['ok' => true, 'requires_2fa' => false, 'csrf_token' => issue_csrf_token()]);

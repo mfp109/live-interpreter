@@ -19,10 +19,13 @@ function current_user(array $config): ?array
 {
     $userId = $_SESSION['user_id'] ?? null;
     if (!is_string($userId)) return null;
+    $now=time();$signedIn=(int)($_SESSION['signed_in_at']??0);$lastSeen=(int)($_SESSION['last_seen_at']??0);
+    if($signedIn<=0||$now-$signedIn>43200||($lastSeen>0&&$now-$lastSeen>1800)){$_SESSION=[];session_destroy();return null;}
     $stmt = db($config)->prepare('SELECT id, email, display_name, locale, role, status, email_verified_at, auth_version FROM users WHERE id = ? AND deleted_at IS NULL');
     $stmt->execute([$userId]);
     $user = $stmt->fetch();
     if (!$user || $user['status'] !== 'active' || !isset($_SESSION['auth_version']) || (int)$_SESSION['auth_version'] !== (int)$user['auth_version']) return null;
+    $_SESSION['last_seen_at']=$now;
     return $user;
 }
 
