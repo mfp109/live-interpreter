@@ -96,6 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $token = posted('setup_token');
     if (!hash_equals(SETUP_TOKEN_HASH, hash('sha256', $token))) $errors[] = '設定コードが正しくありません。';
 
+    $dbHost = strtolower(posted('db_host'));
     $dbName = posted('db_name');
     $dbUser = posted('db_user');
     $dbPassword = (string)($_POST['db_password'] ?? '');
@@ -110,6 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $legalPhone = posted('legal_phone');
     $legalEmail = strtolower(posted('legal_email'));
 
+    if (!preg_match('/^(?:[a-z0-9](?:[a-z0-9.-]{0,251}[a-z0-9])?|\[[0-9a-f:]+\])$/', $dbHost)) $errors[] = 'DB接続先ホストの形式が正しくありません。';
     if (!preg_match('/^[A-Za-z0-9_]+$/', $dbName)) $errors[] = 'DB名の形式が正しくありません。';
     if (!preg_match('/^[A-Za-z0-9_]+$/', $dbUser)) $errors[] = 'DBユーザー名の形式が正しくありません。';
     if ($dbPassword === '') $errors[] = 'DBパスワードを入力してください。';
@@ -127,7 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $stage = 'db_connect';
             $pdo = new PDO(
-                "mysql:host=localhost;dbname={$dbName};charset=utf8mb4",
+                "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
                 $dbUser,
                 $dbPassword,
                 [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]
@@ -164,7 +166,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $config = [
                 'app_env' => 'production',
                 'app_url' => 'https://live-interpreter.shalomworks.tech',
-                'db' => ['host'=>'localhost','name'=>$dbName,'user'=>$dbUser,'password'=>$dbPassword,'charset'=>'utf8mb4'],
+                'db' => ['host'=>$dbHost,'name'=>$dbName,'user'=>$dbUser,'password'=>$dbPassword,'charset'=>'utf8mb4'],
                 'session_name' => 'swli_session',
                 'stripe_secret_key' => $stripeSecret,
                 'stripe_webhook_secret' => $stripeWebhook,
@@ -217,6 +219,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 <form method="post" autocomplete="off">
 <label>設定コード</label><input type="password" name="setup_token" required>
 <h2>ConoHaデータベース</h2>
+<label>DB接続先ホスト</label><input name="db_host" placeholder="ConoHaのデータベース詳細に表示される接続先ホスト" required>
 <label>DB名</label><input name="db_name" value="dvhm5_interpreter" required>
 <label>DBユーザー名</label><input name="db_user" value="dvhm5_interpreter" required>
 <label>DBパスワード</label><input type="password" name="db_password" required>
