@@ -12,4 +12,4 @@ CREATE TABLE password_reset_attempts (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_reset_email_created (email_hash,created_at),
   INDEX idx_reset_ip_created (ip_hash,created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -9,4 +9,4 @@ CREATE TABLE usage_events (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_usage_session FOREIGN KEY (session_id) REFERENCES translation_sessions(id),
   UNIQUE KEY uq_usage_session_sequence (session_id, sequence)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

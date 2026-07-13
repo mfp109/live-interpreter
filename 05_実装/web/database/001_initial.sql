@@ -1,4 +1,4 @@
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
   id CHAR(36) PRIMARY KEY,
   email VARCHAR(254) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
@@ -17,7 +17,7 @@ CREATE TABLE users (
   INDEX idx_users_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE email_verification_tokens (
+CREATE TABLE IF NOT EXISTS email_verification_tokens (
   id CHAR(36) PRIMARY KEY,
   user_id CHAR(36) NOT NULL,
   token_hash CHAR(64) NOT NULL UNIQUE,
@@ -26,9 +26,9 @@ CREATE TABLE email_verification_tokens (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_verify_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   INDEX idx_verify_user (user_id), INDEX idx_verify_expiry (expires_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE products (
+CREATE TABLE IF NOT EXISTS products (
   id CHAR(36) PRIMARY KEY,
   code VARCHAR(50) NOT NULL UNIQUE,
   name_key VARCHAR(100) NOT NULL,
@@ -40,9 +40,9 @@ CREATE TABLE products (
   sort_order INT NOT NULL DEFAULT 0,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE wallets (
+CREATE TABLE IF NOT EXISTS wallets (
   user_id CHAR(36) PRIMARY KEY,
   trial_seconds INT UNSIGNED NOT NULL DEFAULT 0,
   paid_seconds INT UNSIGNED NOT NULL DEFAULT 0,
@@ -50,9 +50,9 @@ CREATE TABLE wallets (
   version BIGINT UNSIGNED NOT NULL DEFAULT 0,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT fk_wallet_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE credit_ledger (
+CREATE TABLE IF NOT EXISTS credit_ledger (
   id CHAR(36) PRIMARY KEY,
   user_id CHAR(36) NOT NULL,
   entry_type ENUM('trial_grant','purchase','usage','expiry','refund','chargeback','admin_adjustment','reservation','release') NOT NULL,
@@ -65,9 +65,9 @@ CREATE TABLE credit_ledger (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_ledger_user FOREIGN KEY (user_id) REFERENCES users(id),
   INDEX idx_ledger_user_created (user_id, created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE payments (
+CREATE TABLE IF NOT EXISTS payments (
   id CHAR(36) PRIMARY KEY,
   user_id CHAR(36) NOT NULL,
   product_id CHAR(36) NOT NULL,
@@ -82,18 +82,18 @@ CREATE TABLE payments (
   CONSTRAINT fk_payment_user FOREIGN KEY (user_id) REFERENCES users(id),
   CONSTRAINT fk_payment_product FOREIGN KEY (product_id) REFERENCES products(id),
   INDEX idx_payments_user_created (user_id, created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE stripe_events (
+CREATE TABLE IF NOT EXISTS stripe_events (
   event_id VARCHAR(255) PRIMARY KEY,
   event_type VARCHAR(100) NOT NULL,
   status ENUM('processing','processed','failed') NOT NULL DEFAULT 'processing',
   error_code VARCHAR(100) NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   processed_at DATETIME NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE translation_sessions (
+CREATE TABLE IF NOT EXISTS translation_sessions (
   id CHAR(36) PRIMARY KEY,
   user_id CHAR(36) NOT NULL,
   source_language VARCHAR(20) NOT NULL,
@@ -107,9 +107,9 @@ CREATE TABLE translation_sessions (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_session_user FOREIGN KEY (user_id) REFERENCES users(id),
   INDEX idx_sessions_user_created (user_id, created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE admin_audit_logs (
+CREATE TABLE IF NOT EXISTS admin_audit_logs (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   admin_user_id CHAR(36) NOT NULL,
   action VARCHAR(100) NOT NULL,
@@ -120,9 +120,9 @@ CREATE TABLE admin_audit_logs (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_audit_admin FOREIGN KEY (admin_user_id) REFERENCES users(id),
   INDEX idx_audit_created (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO products (id, code, name_key, seconds_granted, price_minor, currency, sort_order) VALUES
+INSERT IGNORE INTO products (id, code, name_key, seconds_granted, price_minor, currency, sort_order) VALUES
 ('00000000-0000-4000-8000-000000000060', 'starter_60', 'product.starter', 3600, 1500, 'JPY', 10),
 ('00000000-0000-4000-8000-000000000300', 'standard_300', 'product.standard', 18000, 5500, 'JPY', 20),
 ('00000000-0000-4000-8000-000000001000', 'event_1000', 'product.event', 60000, 15000, 'JPY', 30);

@@ -12,7 +12,7 @@ CREATE TABLE credit_lots (
   CONSTRAINT fk_credit_lot_user FOREIGN KEY (user_id) REFERENCES users(id),
   UNIQUE KEY uq_credit_lot_source (source_type, source_id),
   INDEX idx_credit_lot_consumption (user_id,balance_type,expires_at,created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE auth_attempts (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -22,7 +22,7 @@ CREATE TABLE auth_attempts (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_auth_email_time (email_hash,created_at),
   INDEX idx_auth_ip_time (ip_hash,created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE trial_claims (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -33,6 +33,6 @@ CREATE TABLE trial_claims (
   CONSTRAINT fk_trial_claim_user FOREIGN KEY (user_id) REFERENCES users(id),
   INDEX idx_trial_ip_time (ip_hash,created_at),
   INDEX idx_trial_device (device_hash)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 ALTER TABLE users ADD COLUMN deletion_requested_at DATETIME NULL AFTER deleted_at;

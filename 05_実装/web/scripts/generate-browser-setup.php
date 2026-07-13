@@ -55,10 +55,11 @@ $template = <<<'PHP'
 <?php
 declare(strict_types=1);
 
+$cspNonce = base64_encode(random_bytes(18));
 header('Cache-Control: no-store, max-age=0');
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: DENY');
-header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'");
+header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-{$cspNonce}'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'");
 
 const SETUP_TOKEN_HASH = __SETUP_TOKEN_HASH__;
 const GATEWAY_SHARED_SECRET = __GATEWAY_SHARED_SECRET__;
@@ -213,10 +214,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 <?php if ($success): ?>
 <h1>初期設定が完了しました</h1><div class="ok">DB、管理者、Stripeテスト接続、Gateway接続を設定しました。設定用PHPは自動削除されました。</div>
 <h2>管理者2段階認証</h2><p>Google Authenticator等で「セットアップキーを入力」を選び、次のキーを登録してください。この画面を閉じると再表示できません。</p><p class="secret"><?=h($totpSecret)?></p><p>アカウント名: ShalomWorks Live Interpreter<br>キーの種類: 時間ベース</p>
+<script nonce="<?=h($cspNonce)?>">try{sessionStorage.removeItem('swli-one-time-setup-draft')}catch(e){}</script>
 <?php else: ?>
-<h1>ShalomWorks Live Interpreter 初期設定</h1><p class="hint">秘密情報はこのサイトとConoHa DBへ直接送られます。チャットには送信されません。入力値は画面に再表示しません。</p>
+<h1>ShalomWorks Live Interpreter 初期設定</h1><p class="hint">秘密情報はこのサイトとConoHa DBへ直接送られます。チャットには送信されません。再試行が必要な場合に備え、このブラウザタブ内だけに入力内容を一時保持し、成功時に消去します。</p>
 <?php foreach ($errors as $error): ?><div class="error"><?=h($error)?></div><?php endforeach; ?>
-<form method="post" autocomplete="off">
+<form id="setup-form" method="post" autocomplete="on">
 <label>設定コード</label><input type="password" name="setup_token" required>
 <h2>ConoHaデータベース</h2>
 <label>DB接続先ホスト</label><input name="db_host" placeholder="ConoHaのデータベース詳細に表示される接続先ホスト" required>
@@ -238,6 +240,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 <label>問い合わせメールアドレス</label><input type="email" name="legal_email" required>
 <p class="hint">この画面はStripeのテスト環境だけを設定します。本番決済への切替は、法定表示と販売者確認の完了後に別途行います。</p>
 <button type="submit">テスト環境を設定する</button></form>
+<script nonce="<?=h($cspNonce)?>">
+(()=>{const form=document.getElementById('setup-form');const key='swli-one-time-setup-draft';const names=['setup_token','db_host','db_name','db_user','db_password','stripe_secret_key','stripe_webhook_secret','admin_email','admin_password','admin_password_confirm','mail_from','seller_name','legal_address','legal_phone','legal_email'];try{const saved=JSON.parse(sessionStorage.getItem(key)||'{}');for(const name of names){const input=form.elements.namedItem(name);if(input&&saved[name]&&!input.value)input.value=saved[name]}}catch(e){}form.addEventListener('submit',()=>{const saved={};for(const name of names){const input=form.elements.namedItem(name);if(input)saved[name]=input.value}try{sessionStorage.setItem(key,JSON.stringify(saved))}catch(e){}})})();
+</script>
 <?php endif; ?></main></body></html>
 PHP;
 

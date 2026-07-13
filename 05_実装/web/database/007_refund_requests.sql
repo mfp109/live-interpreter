@@ -12,4 +12,4 @@ CREATE TABLE refund_requests (
   CONSTRAINT fk_refund_payment FOREIGN KEY (payment_id) REFERENCES payments(id),
   CONSTRAINT fk_refund_admin FOREIGN KEY (admin_user_id) REFERENCES users(id),
   INDEX idx_refund_payment_status (payment_id,status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
