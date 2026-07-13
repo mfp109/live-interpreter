@@ -19,7 +19,13 @@ function send_verification_email(array $config, string $recipient, string $local
         'Content-Transfer-Encoding: 8bit',
         'X-Mailer: ShalomWorks Live Interpreter',
     ];
-    return mail($recipient, mb_encode_mimeheader($subject, 'UTF-8'), $body, implode("\r\n", $headers));
+    return mail(
+        $recipient,
+        mb_encode_mimeheader($subject, 'UTF-8'),
+        $body,
+        implode("\r\n", $headers),
+        '-f' . $from
+    );
 }
 
 function send_password_reset_email(array $config, string $recipient, string $locale, string $token): bool
@@ -34,5 +40,11 @@ function send_password_reset_email(array $config, string $recipient, string $loc
     ];
     [$subject, $body] = $messages[$locale] ?? $messages['en'];
     $headers = ['From: ShalomWorks <'.$from.'>','Reply-To: '.$from,'Content-Type: text/plain; charset=UTF-8','Content-Transfer-Encoding: 8bit'];
-    return mail($recipient, mb_encode_mimeheader($subject, 'UTF-8'), $body, implode("\r\n", $headers));
+    return mail(
+        $recipient,
+        mb_encode_mimeheader($subject, 'UTF-8'),
+        $body,
+        implode("\r\n", $headers),
+        '-f' . $from
+    );
 }
