@@ -40,7 +40,11 @@ foreach ($migrationFiles as $file) {
     $migrations[basename($file)] = $sql;
 }
 
-$setupToken = bin2hex(random_bytes(16));
+$setupToken = (string)(getenv('SWLI_SETUP_CODE') ?: bin2hex(random_bytes(16)));
+if (!preg_match('/^[a-f0-9]{32}$/', $setupToken)) {
+    fwrite(STDERR, "SWLI_SETUP_CODE must be 32 lowercase hexadecimal characters.\n");
+    exit(1);
+}
 $replacements = [
     '__SETUP_TOKEN_HASH__' => var_export(hash('sha256', $setupToken), true),
     '__GATEWAY_SHARED_SECRET__' => var_export($gatewaySecret, true),
@@ -86,6 +90,7 @@ $errors = [];
 $success = false;
 $totpSecret = '';
 $configPath = __DIR__ . '/api/config.php';
+$stage = 'validation';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $token = posted('setup_token');
@@ -120,21 +125,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($errors === []) {
         try {
+            $stage = 'db_connect';
             $pdo = new PDO(
                 "mysql:host=localhost;dbname={$dbName};charset=utf8mb4",
                 $dbUser,
                 $dbPassword,
                 [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]
             );
+            $stage = 'schema_migrations';
             $pdo->exec('CREATE TABLE IF NOT EXISTS schema_migrations (version VARCHAR(100) PRIMARY KEY, applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4');
             $applied = array_flip($pdo->query('SELECT version FROM schema_migrations')->fetchAll(PDO::FETCH_COLUMN));
             foreach (MIGRATIONS as $version => $sql) {
                 if (isset($applied[$version])) continue;
+                $stage = 'migration_' . preg_replace('/[^0-9A-Za-z_]/', '_', $version);
                 $pdo->exec($sql);
                 $stmt = $pdo->prepare('INSERT INTO schema_migrations (version) VALUES (?)');
                 $stmt->execute([$version]);
             }
 
+            $stage = 'admin_account';
             $adminId = uuid_v4_setup();
             $pdo->beginTransaction();
             $stmt = $pdo->prepare('SELECT id FROM users WHERE email=? FOR UPDATE');
@@ -168,6 +177,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'mail' => ['from'=>$mailFrom],
                 'legal' => ['seller_name'=>$sellerName,'address'=>$legalAddress,'phone'=>$legalPhone,'email'=>$legalEmail],
             ];
+            $stage = 'config_write';
             $tempPath = $configPath . '.tmp-' . bin2hex(random_bytes(6));
             $contents = "<?php\ndeclare(strict_types=1);\n\nreturn " . var_export($config, true) . ";\n";
             if (file_put_contents($tempPath, $contents, LOCK_EX) === false) throw new RuntimeException('CONFIG_WRITE_FAILED');
@@ -179,7 +189,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } catch (Throwable $error) {
             if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) $pdo->rollBack();
             error_log('SWLI browser setup failed: ' . $error->getMessage());
-            $errors[] = '設定に失敗しました。入力内容を確認し、画面を閉じずにエラー表示のスクリーンショットを送ってください。';
+            $driverCode = $error instanceof PDOException ? (string)($error->errorInfo[1] ?? '') : '';
+            $diagnostic = match ($driverCode) {
+                '1044', '1045' => 'DB_AUTH_OR_PERMISSION_FAILED',
+                '1049' => 'DB_NOT_FOUND',
+                '1050', '1060', '1061' => 'DB_PARTIAL_MIGRATION',
+                '1142', '1143' => 'DB_PERMISSION_FAILED',
+                '1205', '1213' => 'DB_BUSY_RETRY',
+                '2002', '2003', '2005' => 'DB_HOST_CONNECTION_FAILED',
+                default => 'SETUP_' . strtoupper(preg_replace('/[^0-9A-Za-z_]/', '_', $stage)) . '_FAILED',
+            };
+            $errors[] = '設定に失敗しました。秘密情報は保存されていません。診断コード: ' . $diagnostic;
         }
     }
 }
