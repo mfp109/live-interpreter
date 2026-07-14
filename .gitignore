@@ -1,0 +1,13 @@
+.DS_Store
+._*
+**/node_modules/
+**/dist/
+**/release/
+**/deploy/
+**/.env
+**/.env.*
+!**/.env.example
+**/api/config.php
+*.log
+*.tar.gz
+*.zip

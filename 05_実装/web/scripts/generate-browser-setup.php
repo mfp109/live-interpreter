@@ -222,8 +222,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 <label>設定コード</label><input type="password" name="setup_token" required>
 <h2>ConoHaデータベース</h2>
 <label>DB接続先ホスト</label><input name="db_host" placeholder="ConoHaのデータベース詳細に表示される接続先ホスト" required>
-<label>DB名</label><input name="db_name" value="dvhm5_interpreter" required>
-<label>DBユーザー名</label><input name="db_user" value="dvhm5_interpreter" required>
+<label>DB名</label><input name="db_name" autocomplete="off" required>
+<label>DBユーザー名</label><input name="db_user" autocomplete="off" required>
 <label>DBパスワード</label><input type="password" name="db_password" required>
 <h2>Stripe サンドボックス</h2>
 <label>テスト用シークレットキー（sk_test_...）</label><input type="password" name="stripe_secret_key" required>
