@@ -19,3 +19,14 @@ export function signGatewayRequest(payload, secret, timestamp = Math.floor(Date.
   const signature = crypto.createHmac("sha256", secret).update(`${timestamp}.${body}`).digest("hex");
   return { body, timestamp: String(timestamp), signature };
 }
+
+export function verifyGatewayRequest(body, timestamp, signature, secret, now = Math.floor(Date.now() / 1000)) {
+  if (!secret || secret === "CHANGE_ME" || !/^\d+$/.test(String(timestamp || "")) || Math.abs(now - Number(timestamp)) > 60) {
+    throw new Error("gateway_request_expired");
+  }
+  const expected = crypto.createHmac("sha256", secret).update(`${timestamp}.${body}`).digest();
+  const supplied = Buffer.from(String(signature || ""), "hex");
+  if (!/^[a-f0-9]{64}$/.test(String(signature || "")) || expected.length !== supplied.length || !crypto.timingSafeEqual(expected, supplied)) {
+    throw new Error("gateway_signature_invalid");
+  }
+}

@@ -16,6 +16,7 @@ import { AdminPanel } from "./AdminPanel";
 import { LegalPage } from "./LegalPage";
 import { ResetPassword } from "./ResetPassword";
 import { AccountTools } from "./AccountTools";
+import { PreparationBrief } from "./PreparationBrief";
 
 type Locale = "ja" | "en" | "zh-CN";
 type View = "home" | "account";
@@ -430,6 +431,7 @@ export function App() {
             <AdminPanel csrf={csrf} />
           ) : (
             <>
+              <PreparationBrief csrf={csrf} locale={locale} />
               <Interpreter
                 wallet={wallet}
                 csrf={csrf}

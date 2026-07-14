@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import test from "node:test";
-import { signGatewayRequest, verifyAccessToken } from "../src/token.mjs";
+import { signGatewayRequest, verifyAccessToken, verifyGatewayRequest } from "../src/token.mjs";
 
 const b64 = (value) => Buffer.from(value).toString("base64url");
 function token(claims, secret) { const payload=b64(JSON.stringify(claims)); return `${payload}.${crypto.createHmac("sha256",secret).update(payload).digest("base64url")}`; }
@@ -18,4 +18,10 @@ test("rejects tampering and expiration",()=>{
 test("signs settlement body reproducibly",()=>{
   const signed=signGatewayRequest({session_id:"s",seconds:10},"secret",1000);
   assert.equal(signed.signature,crypto.createHmac("sha256","secret").update(`1000.${signed.body}`).digest("hex"));
+});
+test("verifies signed gateway requests",()=>{
+  const signed=signGatewayRequest({hello:"world"},"secret",1000);
+  assert.doesNotThrow(()=>verifyGatewayRequest(signed.body,signed.timestamp,signed.signature,"secret",1000));
+  assert.throws(()=>verifyGatewayRequest(signed.body+"x",signed.timestamp,signed.signature,"secret",1000));
+  assert.throws(()=>verifyGatewayRequest(signed.body,signed.timestamp,signed.signature,"secret",1061));
 });

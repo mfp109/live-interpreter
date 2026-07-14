@@ -12,4 +12,6 @@ try { verify_gateway_request($config,$payload.'x',$timestamp,$signature); } catc
 if (!$failed) throw new RuntimeException('Tampered gateway payload accepted.');
 $token=create_gateway_token($config,['sid'=>'s','exp'=>time()+60]);
 if (substr_count($token,'.')!==1) throw new RuntimeException('Gateway token format invalid.');
+$signed=sign_gateway_payload($config,$payload,1000);
+if($signed['timestamp']!=='1000'||$signed['signature']!==hash_hmac('sha256','1000.'.$payload,'test-secret'))throw new RuntimeException('Gateway signing failed.');
 echo "Gateway signature tests passed.\n";

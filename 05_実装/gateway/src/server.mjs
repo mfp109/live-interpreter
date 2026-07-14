@@ -1,7 +1,8 @@
 import crypto from "node:crypto";
 import http from "node:http";
 import { WebSocket, WebSocketServer } from "ws";
-import { signGatewayRequest, verifyAccessToken } from "./token.mjs";
+import { signGatewayRequest, verifyAccessToken, verifyGatewayRequest } from "./token.mjs";
+import { generatePreparationBrief } from "./preparation.mjs";
 
 const config = {
   port: Number(process.env.PORT || 8787),
@@ -31,6 +32,34 @@ const server = http.createServer((request, response) => {
   if (request.url === "/health") {
     response.writeHead(configured() ? 200 : 503, { "Content-Type": "application/json", "Cache-Control": "no-store" });
     response.end(JSON.stringify({ ok: configured(), service: "live-interpreter-gateway" }));
+    return;
+  }
+  if (request.url === "/prepare" && request.method === "POST") {
+    let body = "";
+    request.on("data", (chunk) => {
+      body += chunk;
+      if (Buffer.byteLength(body) > 64 * 1024) request.destroy();
+    });
+    request.on("end", async () => {
+      try {
+        verifyGatewayRequest(body, request.headers["x-gateway-timestamp"], request.headers["x-gateway-signature"], config.sharedSecret);
+        const input = JSON.parse(body);
+        const length = [input.situation, input.purpose, input.key_terms].map((value) => String(value || "")).join("").length;
+        const allowed = new Set(["ja","en","zh","ko","es","fr","de","pt","it","ru","ar","hi","th","vi"]);
+        if (!configured() || !input.user_id || !allowed.has(input.source_language) || !allowed.has(input.target_language) || input.source_language === input.target_language || !String(input.situation || "").trim() || length > 2000) {
+          response.writeHead(400, { "Content-Type": "application/json", "Cache-Control": "no-store" });
+          response.end(JSON.stringify({ ok: false, error: "invalid_request" }));
+          return;
+        }
+        const brief = await generatePreparationBrief(input, config.openaiKey);
+        response.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" });
+        response.end(JSON.stringify({ ok: true, brief }));
+      } catch (error) {
+        const authError = String(error?.message || "").startsWith("gateway_");
+        response.writeHead(authError ? 401 : 503, { "Content-Type": "application/json", "Cache-Control": "no-store" });
+        response.end(JSON.stringify({ ok: false, error: authError ? "unauthorized" : "generation_unavailable" }));
+      }
+    });
     return;
   }
   response.writeHead(404).end();

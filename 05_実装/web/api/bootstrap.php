@@ -15,5 +15,6 @@ require_once API_ROOT . '/lib/http.php';
 require_once API_ROOT . '/lib/db.php';
 require_once API_ROOT . '/lib/auth.php';
 require_once API_ROOT . '/lib/credits.php';
+require_once API_ROOT . '/lib/gateway.php';
 
 start_secure_session($config);

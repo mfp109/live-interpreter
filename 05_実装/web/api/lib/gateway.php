@@ -14,6 +14,17 @@ function create_gateway_token(array $config, array $claims): string
     return $payload . '.' . base64url_encode(hash_hmac('sha256', $payload, $secret, true));
 }
 
+function sign_gateway_payload(array $config, string $payload, ?int $timestamp = null): array
+{
+    $secret = (string)($config['gateway_shared_secret'] ?? '');
+    if ($secret === '' || $secret === 'CHANGE_ME') throw new RuntimeException('Gateway is not configured.');
+    $value = (string)($timestamp ?? time());
+    return [
+        'timestamp' => $value,
+        'signature' => hash_hmac('sha256', $value . '.' . $payload, $secret),
+    ];
+}
+
 function verify_gateway_request(array $config, string $payload, string $timestamp, string $signature): void
 {
     $secret = (string)($config['gateway_shared_secret'] ?? '');
