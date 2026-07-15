@@ -27,12 +27,12 @@ const copy = {
     faq: "よくある質問",
     login: "ログイン",
     account: "マイページ",
-    cta: "15分無料で試す",
+    cta: "1分無料で試す",
     eyebrow: "声が届けば、心も届く。",
     hero: "話した言葉を、\nそのまま世界へ。",
     lead: "マイクに話すだけ。低遅延のAI音声通訳が、あなたの声を別の言語へ届けます。字幕を読む必要はありません。",
     demo: "実際の通訳を見る",
-    trial: "登録後15分無料",
+    trial: "登録後1分無料",
     card: "ブラウザで今すぐ通訳",
     from: "入力言語",
     to: "出力言語",
@@ -58,7 +58,10 @@ const copy = {
     interpretText: "AIが音声を途切れにくく低遅延で通訳します。",
     listenTitle: "聞く",
     listenText: "聞き手は選択した言語の自然な音声を聞きます。",
-    pricingNote: "初回登録は15分無料。購入時間は秒単位で消費されます。",
+    pricingNote:
+      "新規登録は1分無料。初回購入限定で30分を500円で提供します。購入時間は秒単位で消費されます。",
+    introName: "初回お試し",
+    introBadge: "初回購入限定",
     faqTitle: "よくある質問",
     faq1q: "会話は保存されますか？",
     faq1a:
@@ -84,12 +87,12 @@ const copy = {
     faq: "FAQ",
     login: "Sign in",
     account: "My account",
-    cta: "Try 15 minutes free",
+    cta: "Try 1 minute free",
     eyebrow: "When your voice reaches them, your heart can too.",
     hero: "Speak naturally.\nBe heard worldwide.",
     lead: "Just speak into your microphone. Low-latency AI interpretation carries your voice into another language—no subtitles to follow.",
     demo: "Watch a real demo",
-    trial: "15 free minutes after signup",
+    trial: "1 free minute after signup",
     card: "Interpret now in your browser",
     from: "Input language",
     to: "Output language",
@@ -118,7 +121,9 @@ const copy = {
     listenText:
       "Your audience hears a natural voice in their selected language.",
     pricingNote:
-      "New accounts receive 15 free minutes. Purchased time is used by the second.",
+      "New accounts receive 1 free minute. Your first purchase includes 30 minutes for ¥500. Purchased time is used by the second.",
+    introName: "First Try",
+    introBadge: "FIRST PURCHASE ONLY",
     faqTitle: "Frequently asked questions",
     faq1q: "Do you store conversations?",
     faq1a:
@@ -144,12 +149,12 @@ const copy = {
     faq: "常见问题",
     login: "登录",
     account: "我的账户",
-    cta: "免费试用15分钟",
+    cta: "免费试用1分钟",
     eyebrow: "声音传达，心意也能传达。",
     hero: "自然说话，\n让世界听见。",
     lead: "只需对着麦克风说话。低延迟AI语音口译会将您的声音转换成另一种语言，无需阅读字幕。",
     demo: "观看真实演示",
-    trial: "注册后免费15分钟",
+    trial: "注册后免费1分钟",
     card: "立即在浏览器中口译",
     from: "输入语言",
     to: "输出语言",
@@ -174,7 +179,10 @@ const copy = {
     interpretText: "AI以低延迟连续进行语音口译。",
     listenTitle: "收听",
     listenText: "听众会听到所选语言的自然语音。",
-    pricingNote: "新注册用户可免费使用15分钟，购买时间按秒扣除。",
+    pricingNote:
+      "新注册用户可免费使用1分钟。首次购买限时30分钟500日元。购买时间按秒扣除。",
+    introName: "首次体验",
+    introBadge: "仅限首次购买",
     faqTitle: "常见问题",
     faq1q: "会保存对话吗？",
     faq1a:
@@ -195,6 +203,14 @@ const copy = {
   },
 } as const;
 const fallbackProducts = [
+  {
+    id: "00000000-0000-4000-8000-000000000030",
+    code: "intro_30",
+    name_key: "product.intro",
+    seconds_granted: 1800,
+    price_minor: 500,
+    currency: "JPY",
+  },
   {
     id: "00000000-0000-4000-8000-000000000060",
     code: "starter_60",
@@ -226,30 +242,30 @@ const pageMetadata = {
     lang: "ja",
     title: "Live Interpreter | AI音声通訳をブラウザーで",
     description:
-      "マイクに話すだけで、声を別の言語の音声へ。会議・イベント・授業・地域活動で使えるブラウザー型AI音声通訳。登録後15分無料。",
+      "マイクに話すだけで、声を別の言語の音声へ。会議・イベント・授業・地域活動で使えるブラウザー型AI音声通訳。登録後1分無料。",
     socialTitle: "Live Interpreter | 話した言葉を、別の言語の音声へ",
     socialDescription:
-      "インストール不要のAI音声通訳。PCやスマートフォンのブラウザーで、15分無料で試せます。",
+      "インストール不要のAI音声通訳。PCやスマートフォンのブラウザーで、1分無料で試せます。",
     ogLocale: "ja_JP",
   },
   en: {
     lang: "en",
     title: "Live Interpreter | Real-time AI voice interpretation",
     description:
-      "Speak into your microphone and be heard in another language. Browser-based AI voice interpretation for meetings, events, education, and communities. Try 15 minutes free.",
+      "Speak into your microphone and be heard in another language. Browser-based AI voice interpretation for meetings, events, education, and communities. Try 1 minute free.",
     socialTitle: "Live Interpreter | Speak naturally. Be heard worldwide.",
     socialDescription:
-      "Low-latency AI voice interpretation in your browser. No app installation required. Try 15 minutes free after signup.",
+      "Low-latency AI voice interpretation in your browser. No app installation required. Try 1 minute free after signup.",
     ogLocale: "en_US",
   },
   "zh-CN": {
     lang: "zh-CN",
     title: "Live Interpreter | 浏览器AI实时语音口译",
     description:
-      "只需对着麦克风说话，即可将语音转换为另一种语言。适用于会议、活动、教育和社区交流。注册后可免费试用15分钟。",
+      "只需对着麦克风说话，即可将语音转换为另一种语言。适用于会议、活动、教育和社区交流。注册后可免费试用1分钟。",
     socialTitle: "Live Interpreter | 自然说话，让世界听见",
     socialDescription:
-      "无需安装应用的AI语音口译服务。可直接在电脑或手机浏览器中使用，注册后免费试用15分钟。",
+      "无需安装应用的AI语音口译服务。可直接在电脑或手机浏览器中使用，注册后免费试用1分钟。",
     ogLocale: "zh_CN",
   },
 } as const;
@@ -322,9 +338,6 @@ export function App() {
   }, [locale]);
   useEffect(() => {
     refreshAccount();
-    api<{ products: Product[] }>("products.php")
-      .then((r) => setProducts(r.products))
-      .catch(() => {});
     const token = new URLSearchParams(location.search).get("token");
     if (location.pathname.includes("verify-email") && token) {
       api("auth/verify-email.php", {
@@ -339,6 +352,14 @@ export function App() {
         .catch((e) => setFlash(e.message));
     }
   }, []);
+  async function refreshProducts() {
+    try {
+      const result = await api<{ products: Product[] }>("products.php");
+      setProducts(result.products);
+    } catch {
+      setProducts(fallbackProducts);
+    }
+  }
   async function refreshAccount() {
     try {
       const result = await api<{
@@ -351,6 +372,8 @@ export function App() {
       setCsrf(result.csrf_token);
     } catch {
       setUser(null);
+    } finally {
+      await refreshProducts();
     }
   }
   function openAccount() {
@@ -377,6 +400,7 @@ export function App() {
     await api("auth/logout.php", { method: "POST" }, csrf).catch(() => {});
     setUser(null);
     setView("home");
+    await refreshProducts();
   }
   const total = Number(wallet.trial_seconds) + Number(wallet.paid_seconds);
   const path = location.pathname;
@@ -527,6 +551,8 @@ export function App() {
                   onChoose={checkout}
                   choose={t.choose}
                   minutes={t.minutes}
+                  introName={t.introName}
+                  introBadge={t.introBadge}
                 />
               </section>
               <AccountTools
@@ -592,7 +618,7 @@ export function App() {
                 <div>
                   <span className="live-dot" /> LIVE INTERPRETER
                 </div>
-                <span className="balance">15:00 FREE</span>
+                <span className="balance">1:00 FREE</span>
               </div>
               <h2>{t.card}</h2>
               <div className="language-row">
@@ -682,6 +708,8 @@ export function App() {
               onChoose={checkout}
               choose={t.choose}
               minutes={t.minutes}
+              introName={t.introName}
+              introBadge={t.introBadge}
             />
             <p className="pricing-note">{t.pricingNote}</p>
           </section>
@@ -733,37 +761,53 @@ function ProductCards({
   onChoose,
   choose,
   minutes,
+  introName,
+  introBadge,
 }: {
   products: Product[];
   onChoose: (product: Product) => void;
   choose: string;
   minutes: string;
+  introName: string;
+  introBadge: string;
 }) {
   return (
     <div className="plans">
-      {products.map((product, index) => (
-        <article className={index === 1 ? "popular" : ""} key={product.id}>
-          {index === 1 && <span className="badge">MOST POPULAR</span>}
-          <h3>
-            {product.code.startsWith("starter")
-              ? "Starter"
-              : product.code.startsWith("standard")
-                ? "Standard"
-                : "Event"}
-          </h3>
-          <strong>¥{Number(product.price_minor).toLocaleString()}</strong>
-          <p>
-            {Math.round(Number(product.seconds_granted) / 60).toLocaleString()}{" "}
-            {minutes}
-          </p>
-          <button
-            className={index === 1 ? "primary" : "secondary"}
-            onClick={() => onChoose(product)}
-          >
-            {choose}
-          </button>
-        </article>
-      ))}
+      {products.map((product) => {
+        const isIntro = product.code.startsWith("intro");
+        const isPopular = product.code.startsWith("standard");
+        return (
+          <article className={isPopular ? "popular" : ""} key={product.id}>
+            {(isIntro || isPopular) && (
+              <span className="badge">
+                {isIntro ? introBadge : "MOST POPULAR"}
+              </span>
+            )}
+            <h3>
+              {isIntro
+                ? introName
+                : product.code.startsWith("starter")
+                  ? "Starter"
+                  : product.code.startsWith("standard")
+                    ? "Standard"
+                    : "Event"}
+            </h3>
+            <strong>¥{Number(product.price_minor).toLocaleString()}</strong>
+            <p>
+              {Math.round(
+                Number(product.seconds_granted) / 60,
+              ).toLocaleString()}{" "}
+              {minutes}
+            </p>
+            <button
+              className={isPopular ? "primary" : "secondary"}
+              onClick={() => onChoose(product)}
+            >
+              {choose}
+            </button>
+          </article>
+        );
+      })}
     </div>
   );
 }

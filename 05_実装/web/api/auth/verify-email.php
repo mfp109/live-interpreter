@@ -24,9 +24,9 @@ try {
         $stmt=$pdo->prepare('SELECT SUM(ip_hash=? AND created_at>DATE_SUB(NOW(),INTERVAL 30 DAY)) ip_claims,SUM(device_hash IS NOT NULL AND device_hash=?) device_claims FROM trial_claims');$stmt->execute([$ipHash,$deviceHash]);$claims=$stmt->fetch();
         if((int)($claims['ip_claims']??0)<3&&(int)($claims['device_claims']??0)<1){
             $key = 'trial:' . $record['user_id'];
-            $grant = $pdo->prepare("INSERT IGNORE INTO credit_ledger (id,user_id,entry_type,trial_delta,idempotency_key,note) VALUES (?,?,'trial_grant',900,?,'Initial 15-minute trial')");
+            $grant = $pdo->prepare("INSERT IGNORE INTO credit_ledger (id,user_id,entry_type,trial_delta,idempotency_key,note) VALUES (?,?,'trial_grant',60,?,'Initial 1-minute trial')");
             $grant->execute([uuid_v4(), $record['user_id'], $key]);
-            if ($grant->rowCount() === 1 && grant_credit_lot($pdo,$record['user_id'],'trial','trial',$record['user_id'],900,30)) $trialSeconds=900;
+            if ($grant->rowCount() === 1 && grant_credit_lot($pdo,$record['user_id'],'trial','trial',$record['user_id'],60,30)) $trialSeconds=60;
             $pdo->prepare('INSERT IGNORE INTO trial_claims (user_id,ip_hash,device_hash) VALUES (?,?,?)')->execute([$record['user_id'],$ipHash,$deviceHash]);
         }
         $pdo->prepare('UPDATE users SET trial_granted_at=COALESCE(trial_granted_at,NOW()) WHERE id=?')->execute([$record['user_id']]);

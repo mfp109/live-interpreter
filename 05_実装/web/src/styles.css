@@ -294,11 +294,16 @@ nav a {
 .features,
 .plans {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
   gap: 22px;
   max-width: 1100px;
   margin: 45px auto 0;
   text-align: left;
+}
+.features {
+  grid-template-columns: repeat(3, 1fr);
+}
+.plans {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 .features article,
 .plans article {

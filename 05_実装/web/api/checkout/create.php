@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/bootstrap.php';
 require_once dirname(__DIR__) . '/lib/stripe.php';
+require_once dirname(__DIR__) . '/lib/products.php';
 require_method('POST');
 $user = require_user($config);
 require_csrf();
@@ -15,8 +16,25 @@ $product = $stmt->fetch();
 if (!$product) json_error('PRODUCT_NOT_FOUND', 'Product is not available.', 404);
 
 $paymentId = uuid_v4();
-$pdo->prepare("INSERT INTO payments (id,user_id,product_id,amount_minor,currency,status) VALUES (?,?,?,?,?,'created')")
-    ->execute([$paymentId, $user['id'], $product['id'], $product['price_minor'], $product['currency']]);
+try {
+    $pdo->beginTransaction();
+    $lock = $pdo->prepare('SELECT id FROM users WHERE id=? FOR UPDATE');
+    $lock->execute([$user['id']]);
+    if (!$lock->fetchColumn()) throw new RuntimeException('USER_NOT_FOUND');
+    if ((string)$product['id'] === INTRODUCTORY_PRODUCT_ID && !introductory_offer_available($pdo, (string)$user['id'])) {
+        $pdo->rollBack();
+        json_error('INTRO_OFFER_NOT_AVAILABLE', 'The introductory offer is available only for your first purchase.', 409);
+    }
+    $pdo->prepare("INSERT INTO payments (id,user_id,product_id,amount_minor,currency,status) VALUES (?,?,?,?,?,'created')")
+        ->execute([$paymentId, $user['id'], $product['id'], $product['price_minor'], $product['currency']]);
+    $pdo->commit();
+} catch (Throwable $error) {
+    if ($pdo->inTransaction()) $pdo->rollBack();
+    if ($error instanceof RuntimeException && $error->getMessage() === 'USER_NOT_FOUND') {
+        json_error('AUTH_REQUIRED', 'Authentication required.', 401);
+    }
+    throw $error;
+}
 
 try {
     $session = stripe_request($config, 'POST', '/v1/checkout/sessions', [
