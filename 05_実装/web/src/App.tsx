@@ -221,6 +221,45 @@ const fallbackProducts = [
   },
 ];
 
+const pageMetadata = {
+  ja: {
+    lang: "ja",
+    title: "Live Interpreter | AI音声通訳をブラウザーで",
+    description:
+      "マイクに話すだけで、声を別の言語の音声へ。会議・イベント・授業・地域活動で使えるブラウザー型AI音声通訳。登録後15分無料。",
+    socialTitle: "Live Interpreter | 話した言葉を、別の言語の音声へ",
+    socialDescription:
+      "インストール不要のAI音声通訳。PCやスマートフォンのブラウザーで、15分無料で試せます。",
+    ogLocale: "ja_JP",
+  },
+  en: {
+    lang: "en",
+    title: "Live Interpreter | Real-time AI voice interpretation",
+    description:
+      "Speak into your microphone and be heard in another language. Browser-based AI voice interpretation for meetings, events, education, and communities. Try 15 minutes free.",
+    socialTitle: "Live Interpreter | Speak naturally. Be heard worldwide.",
+    socialDescription:
+      "Low-latency AI voice interpretation in your browser. No app installation required. Try 15 minutes free after signup.",
+    ogLocale: "en_US",
+  },
+  "zh-CN": {
+    lang: "zh-CN",
+    title: "Live Interpreter | 浏览器AI实时语音口译",
+    description:
+      "只需对着麦克风说话，即可将语音转换为另一种语言。适用于会议、活动、教育和社区交流。注册后可免费试用15分钟。",
+    socialTitle: "Live Interpreter | 自然说话，让世界听见",
+    socialDescription:
+      "无需安装应用的AI语音口译服务。可直接在电脑或手机浏览器中使用，注册后免费试用15分钟。",
+    ogLocale: "zh_CN",
+  },
+} as const;
+
+function setMetaContent(selector: string, content: string) {
+  document
+    .querySelector<HTMLMetaElement>(selector)
+    ?.setAttribute("content", content);
+}
+
 function initialLocale(): Locale {
   const query = new URLSearchParams(location.search).get("lang");
   if (query === "ja" || query === "en" || query === "zh-CN") return query;
@@ -251,6 +290,30 @@ export function App() {
   const heroLines = useMemo(() => t.hero.split("\n"), [t.hero]);
   useEffect(() => {
     localStorage.setItem("swli.locale", locale);
+    const metadata = pageMetadata[locale];
+    document.documentElement.lang = metadata.lang;
+    document.title = metadata.title;
+    setMetaContent('meta[name="description"]', metadata.description);
+    setMetaContent('meta[property="og:title"]', metadata.socialTitle);
+    setMetaContent(
+      'meta[property="og:description"]',
+      metadata.socialDescription,
+    );
+    setMetaContent('meta[property="og:locale"]', metadata.ogLocale);
+    setMetaContent('meta[name="twitter:title"]', metadata.socialTitle);
+    setMetaContent(
+      'meta[name="twitter:description"]',
+      metadata.socialDescription,
+    );
+    const url = new URL(location.href);
+    if (url.searchParams.get("lang") !== locale) {
+      url.searchParams.set("lang", locale);
+      history.replaceState(
+        history.state,
+        "",
+        `${url.pathname}${url.search}${url.hash}`,
+      );
+    }
   }, [locale]);
   useEffect(() => {
     refreshAccount();
@@ -556,10 +619,10 @@ export function App() {
             </div>
           </section>
           <section className="trust">
-            <span>FOR CHURCHES</span>
             <span>EVENTS</span>
             <span>EDUCATION</span>
-            <span>TRAVEL</span>
+            <span>INTERNATIONAL COMMUNITIES</span>
+            <span>FAITH COMMUNITIES</span>
             <span>CUSTOMER SUPPORT</span>
           </section>
           <section id="demo" className="demo-section">

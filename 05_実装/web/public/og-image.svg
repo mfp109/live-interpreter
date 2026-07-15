@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Live Interpreter</title>
+  <desc id="desc">Speak naturally. Be heard worldwide. Browser-based AI voice interpretation with a 15-minute free trial.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0d2d2e"/>
+      <stop offset="0.55" stop-color="#17695f"/>
+      <stop offset="1" stop-color="#2c8b75"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#bce8d8" stop-opacity=".34"/>
+      <stop offset="1" stop-color="#bce8d8" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="20" stdDeviation="28" flood-color="#00191b" flood-opacity=".32"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="630" rx="0" fill="url(#background)"/>
+  <circle cx="1010" cy="92" r="310" fill="url(#glow)"/>
+  <circle cx="108" cy="590" r="250" fill="url(#glow)"/>
+
+  <g opacity=".18" fill="none" stroke="#dff9ef" stroke-width="2">
+    <circle cx="965" cy="315" r="205"/>
+    <ellipse cx="965" cy="315" rx="92" ry="205"/>
+    <path d="M760 315h410M795 220h340M795 410h340"/>
+  </g>
+
+  <g transform="translate(82 70)">
+    <g transform="translate(0 4)">
+      <circle cx="32" cy="32" r="32" fill="#eaf7f1"/>
+      <g transform="translate(14 16)" fill="#17695f">
+        <rect x="0" y="10" width="4" height="12" rx="2"/>
+        <rect x="8" y="4" width="4" height="24" rx="2"/>
+        <rect x="16" y="0" width="4" height="32" rx="2"/>
+        <rect x="24" y="6" width="4" height="20" rx="2"/>
+        <rect x="32" y="11" width="4" height="10" rx="2"/>
+      </g>
+    </g>
+    <text x="82" y="29" fill="#cce7dd" font-family="Arial, sans-serif" font-size="20" font-weight="700" letter-spacing="3">SHALOMWORKS</text>
+    <text x="82" y="58" fill="#ffffff" font-family="Georgia, serif" font-size="29" font-weight="700">Live Interpreter</text>
+  </g>
+
+  <g transform="translate(82 196)">
+    <text fill="#ffffff" font-family="Georgia, serif" font-size="68" font-weight="700">
+      <tspan x="0" y="0">Speak naturally.</tspan>
+      <tspan x="0" y="84">Be heard worldwide.</tspan>
+    </text>
+    <text x="3" y="142" fill="#d9eee6" font-family="Arial, sans-serif" font-size="26">
+      Real-time AI voice interpretation in your browser.
+    </text>
+  </g>
+
+  <g transform="translate(82 515)" filter="url(#shadow)">
+    <rect width="302" height="58" rx="29" fill="#f4c76b"/>
+    <text x="151" y="37" text-anchor="middle" fill="#17383b" font-family="Arial, sans-serif" font-size="21" font-weight="700">TRY 15 MINUTES FREE</text>
+  </g>
+
+  <g transform="translate(760 454)">
+    <rect width="350" height="88" rx="26" fill="#f3faf7" fill-opacity=".94"/>
+    <text x="28" y="36" fill="#52706c" font-family="Arial, sans-serif" font-size="17" font-weight="700">SPEAK</text>
+    <text x="175" y="36" fill="#52706c" font-family="Arial, sans-serif" font-size="17" font-weight="700">INTERPRET</text>
+    <text x="276" y="36" fill="#52706c" font-family="Arial, sans-serif" font-size="16" font-weight="700">LISTEN</text>
+    <path d="M31 57h67" stroke="#17695f" stroke-width="8" stroke-linecap="round"/>
+    <path d="M136 57h76" stroke="#f0b957" stroke-width="8" stroke-linecap="round" stroke-dasharray="7 10"/>
+    <path d="M251 57h68" stroke="#17695f" stroke-width="8" stroke-linecap="round"/>
+  </g>
+</svg>
