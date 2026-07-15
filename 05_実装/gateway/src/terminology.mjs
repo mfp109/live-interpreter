@@ -5,6 +5,10 @@ const languageNames = {
   sv: "Swedish", th: "Thai", tr: "Turkish", uk: "Ukrainian", vi: "Vietnamese",
 };
 
+export function shouldUseTerminologyMode(claims) {
+  return claims?.terminology_mode === true && Array.isArray(claims.glossary) && claims.glossary.length > 0;
+}
+
 export function buildTerminologyInstructions(source, target, glossary) {
   const sourceName = languageNames[source] || source;
   const targetName = languageNames[target] || target;

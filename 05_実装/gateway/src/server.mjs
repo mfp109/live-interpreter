@@ -3,7 +3,7 @@ import http from "node:http";
 import { WebSocket, WebSocketServer } from "ws";
 import { signGatewayRequest, verifyAccessToken, verifyGatewayRequest } from "./token.mjs";
 import { generatePreparationBrief } from "./preparation.mjs";
-import { buildTerminologyInstructions } from "./terminology.mjs";
+import { buildTerminologyInstructions, shouldUseTerminologyMode } from "./terminology.mjs";
 
 const config = {
   port: Number(process.env.PORT || 8787),
@@ -145,7 +145,7 @@ wss.on("connection", (client, request) => {
       } catch { return closeBoth(1008, "invalid_token"); }
       const safetyId = crypto.createHash("sha256").update(claims.uid).digest("hex");
       const glossary = Array.isArray(claims.glossary) ? claims.glossary : [];
-      const terminologyMode = glossary.length > 0;
+      const terminologyMode = shouldUseTerminologyMode(claims);
       const upstreamUrl = terminologyMode
         ? "wss://api.openai.com/v1/realtime?model=gpt-realtime"
         : "wss://api.openai.com/v1/realtime/translations?model=gpt-realtime-translate";
@@ -174,7 +174,7 @@ wss.on("connection", (client, request) => {
     if (event.type === "audio" && typeof event.audio === "string" && event.audio.length <= 180000 && upstream?.readyState === WebSocket.OPEN && !paused) {
       if (!startedAt) startedAt = Date.now();
       if (!activeStartedAt) activeStartedAt = Date.now();
-      const terminologyMode = Array.isArray(claims.glossary) && claims.glossary.length > 0;
+      const terminologyMode = shouldUseTerminologyMode(claims);
       upstream.send(JSON.stringify(terminologyMode
         ? { type: "input_audio_buffer.append", audio: event.audio }
         : { type: "session.input_audio_buffer.append", audio: event.audio }));

@@ -441,6 +441,30 @@ footer a {
   color: #12634f;
   font-size: 0.82rem;
 }
+.terminology-toggle {
+  width: fit-content;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 14px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.terminology-toggle:hover:not(:disabled) {
+  border-color: var(--green);
+  color: var(--green);
+}
+.terminology-toggle.active {
+  border-color: #a85e1b;
+  background: #fff3e6;
+  color: #8a4810;
+}
+.terminology-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
 .meter {
   position: relative;
   height: 58px;

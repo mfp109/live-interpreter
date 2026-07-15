@@ -43,10 +43,15 @@ const ui = {
     autoStop: "安全のため、10分で通訳を自動終了しました。",
     secondsLeft: "自動終了まで",
     glossary: "固有名詞・専門用語（任意）",
-    glossaryHelp: "1行に1つ「話す言葉 = 通訳後の言葉」で入力します。入力した場合は用語優先モードになります。",
+    glossaryHelp:
+      "1行に1つ「話す言葉 = 通訳後の言葉」で入力します。入力しただけでは適用されません。",
     glossaryExample: "例：御言葉 = the Word of God\nShalomWorks = ShalomWorks",
-    glossaryInvalid: "各行を「話す言葉 = 通訳後の言葉」の形で入力してください（最大20件）。",
-    glossaryActive: "用語優先モード",
+    glossaryInvalid:
+      "各行を「話す言葉 = 通訳後の言葉」の形で入力してください（最大20件）。",
+    glossaryActive: "カスタム用語を適用中（通常Realtimeモデル）",
+    glossaryEnable: "カスタム用語を適用",
+    glossaryDisable: "カスタム用語の適用を解除",
+    glossaryRequired: "カスタム用語を1件以上、正しい形式で入力してください。",
   },
   en: {
     title: "Live voice interpretation",
@@ -73,16 +78,24 @@ const ui = {
     reconnecting: "Connection lost. Reconnecting…",
     used: "This session",
     continueTitle: "Continue interpreting?",
-    continueText: "You are approaching 10 minutes. Interpretation will stop automatically if there is no response.",
+    continueText:
+      "You are approaching 10 minutes. Interpretation will stop automatically if there is no response.",
     continueButton: "Continue interpreting",
     endButton: "Stop now",
-    autoStop: "Interpretation stopped automatically after 10 minutes for safety.",
+    autoStop:
+      "Interpretation stopped automatically after 10 minutes for safety.",
     secondsLeft: "Automatic stop in",
     glossary: "Names and terminology (optional)",
-    glossaryHelp: "Enter one pair per line as “spoken term = interpreted term”. Adding terms enables terminology priority mode.",
-    glossaryExample: "Example: 御言葉 = the Word of God\nShalomWorks = ShalomWorks",
-    glossaryInvalid: "Use “spoken term = interpreted term” on each line (maximum 20).",
-    glossaryActive: "Terminology priority mode",
+    glossaryHelp:
+      "Enter one pair per line as “spoken term = interpreted term”. Terms are not applied until you enable them.",
+    glossaryExample:
+      "Example: 御言葉 = the Word of God\nShalomWorks = ShalomWorks",
+    glossaryInvalid:
+      "Use “spoken term = interpreted term” on each line (maximum 20).",
+    glossaryActive: "Custom terms active (standard Realtime model)",
+    glossaryEnable: "Apply custom terms",
+    glossaryDisable: "Stop applying custom terms",
+    glossaryRequired: "Enter at least one valid custom term.",
   },
   "zh-CN": {
     title: "实时语音口译",
@@ -115,10 +128,14 @@ const ui = {
     autoStop: "为防止忘记关闭，口译已在10分钟时自动结束。",
     secondsLeft: "自动结束还剩",
     glossary: "专有名词和术语（可选）",
-    glossaryHelp: "每行输入一组“讲话用词 = 口译用词”。填写后将启用术语优先模式。",
+    glossaryHelp: "每行输入一组“讲话用词 = 口译用词”。仅填写不会自动启用。",
     glossaryExample: "例：御言葉 = the Word of God\nShalomWorks = ShalomWorks",
-    glossaryInvalid: "请按“讲话用词 = 口译用词”格式填写，每行一组（最多20组）。",
-    glossaryActive: "术语优先模式",
+    glossaryInvalid:
+      "请按“讲话用词 = 口译用词”格式填写，每行一组（最多20组）。",
+    glossaryActive: "正在应用自定义术语（标准 Realtime 模型）",
+    glossaryEnable: "应用自定义术语",
+    glossaryDisable: "停止应用自定义术语",
+    glossaryRequired: "请至少输入一组格式正确的自定义术语。",
   },
 } as const;
 const languages = [
@@ -155,7 +172,10 @@ function encodePcm16(samples: Float32Array, inputRate: number) {
 
 type GlossaryEntry = { source: string; translation: string };
 function parseGlossary(value: string): GlossaryEntry[] | null {
-  const lines = value.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const lines = value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
   if (lines.length > 20) return null;
   const entries: GlossaryEntry[] = [];
   for (const line of lines) {
@@ -163,7 +183,13 @@ function parseGlossary(value: string): GlossaryEntry[] | null {
     if (!match) return null;
     const source = match[1].trim();
     const translation = match[2].trim();
-    if (!source || !translation || source.length > 80 || translation.length > 80) return null;
+    if (
+      !source ||
+      !translation ||
+      source.length > 80 ||
+      translation.length > 80
+    )
+      return null;
     entries.push({ source, translation });
   }
   return entries;
@@ -204,6 +230,7 @@ export function Interpreter({
   const [elapsed, setElapsed] = useState(0);
   const [continuePrompt, setContinuePrompt] = useState(false);
   const [glossaryText, setGlossaryText] = useState("");
+  const [useTerminologyMode, setUseTerminologyMode] = useState(false);
   const stream = useRef<MediaStream | null>(null);
   const context = useRef<AudioContext | null>(null);
   const processor = useRef<ScriptProcessorNode | null>(null);
@@ -331,11 +358,16 @@ export function Interpreter({
       setMessage(t.empty);
       return;
     }
-    const glossary = parseGlossary(glossaryText);
-    if (glossary === null) {
+    const parsedGlossary = parseGlossary(glossaryText);
+    if (useTerminologyMode && parsedGlossary === null) {
       setMessage(t.glossaryInvalid);
       return;
     }
+    if (useTerminologyMode && parsedGlossary?.length === 0) {
+      setMessage(t.glossaryRequired);
+      return;
+    }
+    const glossary = useTerminologyMode ? parsedGlossary || [] : [];
     try {
       await prepare();
       reconnectCount.current = 0;
@@ -369,6 +401,7 @@ export function Interpreter({
           source_language: source,
           target_language: target,
           glossary,
+          use_terminology_mode: useTerminologyMode,
         }),
       },
       csrf,
@@ -623,8 +656,26 @@ export function Interpreter({
           disabled={status !== "idle"}
         />
         <small>{t.glossaryHelp}</small>
-        {glossaryText.trim() && parseGlossary(glossaryText) !== null && (
-          <strong>{t.glossaryActive} · {parseGlossary(glossaryText)?.length ?? 0}</strong>
+        <button
+          type="button"
+          className={
+            useTerminologyMode
+              ? "terminology-toggle active"
+              : "terminology-toggle"
+          }
+          onClick={() => setUseTerminologyMode((enabled) => !enabled)}
+          disabled={
+            status !== "idle" ||
+            parseGlossary(glossaryText) === null ||
+            (parseGlossary(glossaryText)?.length ?? 0) === 0
+          }
+        >
+          {useTerminologyMode ? t.glossaryDisable : t.glossaryEnable}
+        </button>
+        {useTerminologyMode && (
+          <strong>
+            {t.glossaryActive} · {parseGlossary(glossaryText)?.length ?? 0}
+          </strong>
         )}
       </label>
       <div className="meter">
