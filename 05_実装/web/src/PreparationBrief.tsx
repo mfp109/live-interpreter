@@ -57,6 +57,8 @@ const text = {
     unavailable:
       "現在AI準備機能を利用できません。少し待ってからもう一度お試しください。",
     chars: "文字",
+    apply: "この重要語をリアルタイム通訳に反映",
+    applied: "通訳設定へ反映しました",
   },
   en: {
     kicker: "GPT-5.6 MEETING PREP",
@@ -85,6 +87,8 @@ const text = {
     unavailable:
       "AI preparation is temporarily unavailable. Please try again shortly.",
     chars: "characters",
+    apply: "Apply these terms to live interpretation",
+    applied: "Applied to live interpretation",
   },
   "zh-CN": {
     kicker: "GPT-5.6 MEETING PREP",
@@ -112,15 +116,23 @@ const text = {
     limit: "已达到今日5次的生成上限。",
     unavailable: "AI准备功能暂时不可用，请稍后重试。",
     chars: "字",
+    apply: "将这些重要词语应用到实时口译",
+    applied: "已应用到实时口译设置",
   },
 } as const;
 
 export function PreparationBrief({
   csrf,
   locale,
+  onApplyToInterpreter,
 }: {
   csrf: string;
   locale: Locale;
+  onApplyToInterpreter: (value: {
+    source: string;
+    target: string;
+    terms: { source: string; translation: string }[];
+  }) => void;
 }) {
   const t = text[locale];
   const [source, setSource] = useState("ja");
@@ -132,6 +144,7 @@ export function PreparationBrief({
   const [remaining, setRemaining] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [applied, setApplied] = useState(false);
   const length = useMemo(
     () => situation.length + purpose.length + keyTerms.length,
     [situation, purpose, keyTerms],
@@ -160,6 +173,7 @@ export function PreparationBrief({
         csrf,
       );
       setBrief(result.brief);
+      setApplied(false);
       setRemaining(result.remaining_generations);
     } catch (error) {
       setMessage(
@@ -273,6 +287,20 @@ export function PreparationBrief({
                   </div>
                 ))}
               </div>
+              <button
+                className="secondary preparation-apply"
+                onClick={() => {
+                  onApplyToInterpreter({
+                    source,
+                    target,
+                    terms: brief.terms.slice(0, 20).map(({ source: term, translation }) => ({ source: term, translation })),
+                  });
+                  setApplied(true);
+                  document.getElementById("live-interpreter")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+              >
+                <Languages size={17} /> {applied ? t.applied : t.apply}
+              </button>
             </article>
           )}
           <div className="brief-columns">

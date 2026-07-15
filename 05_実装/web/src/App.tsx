@@ -286,6 +286,11 @@ export function App() {
   const [csrf, setCsrf] = useState("");
   const [products, setProducts] = useState<Product[]>(fallbackProducts);
   const [flash, setFlash] = useState("");
+  const [terminologyPreset, setTerminologyPreset] = useState<{
+    source: string;
+    target: string;
+    terms: { source: string; translation: string }[];
+  } | null>(null);
   const t = copy[locale];
   const heroLines = useMemo(() => t.hero.split("\n"), [t.hero]);
   useEffect(() => {
@@ -494,11 +499,16 @@ export function App() {
             <AdminPanel csrf={csrf} />
           ) : (
             <>
-              <PreparationBrief csrf={csrf} locale={locale} />
+              <PreparationBrief
+                csrf={csrf}
+                locale={locale}
+                onApplyToInterpreter={setTerminologyPreset}
+              />
               <Interpreter
                 wallet={wallet}
                 csrf={csrf}
                 locale={locale}
+                terminologyPreset={terminologyPreset}
                 onBalance={(seconds) =>
                   setWallet((w) => ({
                     ...w,

@@ -366,6 +366,11 @@ footer a {
 .term-table small {
   color: #607471;
 }
+.preparation-apply {
+  width: 100%;
+  justify-content: center;
+  margin-top: 14px;
+}
 .brief-columns {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -399,6 +404,42 @@ footer a {
 .app-languages {
   max-width: 700px;
   margin: 30px auto;
+}
+
+.glossary-field {
+  display: grid;
+  gap: 8px;
+  margin: 18px 0;
+  font-weight: 700;
+}
+
+.glossary-field textarea {
+  width: 100%;
+  min-height: 92px;
+  resize: vertical;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 400;
+  line-height: 1.55;
+}
+
+.glossary-field small {
+  color: var(--muted);
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.glossary-field strong {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #e5f4ed;
+  color: #12634f;
+  font-size: 0.82rem;
 }
 .meter {
   position: relative;

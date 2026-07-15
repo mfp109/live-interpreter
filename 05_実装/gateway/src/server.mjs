@@ -3,6 +3,7 @@ import http from "node:http";
 import { WebSocket, WebSocketServer } from "ws";
 import { signGatewayRequest, verifyAccessToken, verifyGatewayRequest } from "./token.mjs";
 import { generatePreparationBrief } from "./preparation.mjs";
+import { buildTerminologyInstructions } from "./terminology.mjs";
 
 const config = {
   port: Number(process.env.PORT || 8787),
@@ -143,17 +144,26 @@ wss.on("connection", (client, request) => {
         clearTimeout(authTimer);
       } catch { return closeBoth(1008, "invalid_token"); }
       const safetyId = crypto.createHash("sha256").update(claims.uid).digest("hex");
-      upstream = new WebSocket("wss://api.openai.com/v1/realtime/translations?model=gpt-realtime-translate", {
+      const glossary = Array.isArray(claims.glossary) ? claims.glossary : [];
+      const terminologyMode = glossary.length > 0;
+      const upstreamUrl = terminologyMode
+        ? "wss://api.openai.com/v1/realtime?model=gpt-realtime"
+        : "wss://api.openai.com/v1/realtime/translations?model=gpt-realtime-translate";
+      upstream = new WebSocket(upstreamUrl, {
         headers: { Authorization: `Bearer ${config.openaiKey}`, "OpenAI-Safety-Identifier": safetyId },
       });
       upstream.on("open", () => {
-        upstream.send(JSON.stringify({ type: "session.update", session: { audio: { output: { language: claims.dst } } } }));
-        client.send(JSON.stringify({ type: "ready", session_id: claims.sid }));
+        const session = terminologyMode
+          ? { type: "realtime", instructions: buildTerminologyInstructions(claims.src, claims.dst, glossary) }
+          : { audio: { output: { language: claims.dst } } };
+        upstream.send(JSON.stringify({ type: "session.update", session }));
+        if (!terminologyMode) client.send(JSON.stringify({ type: "ready", session_id: claims.sid, terminology_mode: false }));
       });
       upstream.on("message", (message) => {
         let output;
         try { output = JSON.parse(message.toString()); } catch { return; }
-        if (output.type === "session.output_audio.delta") client.send(JSON.stringify({ type: "audio", delta: output.delta }));
+        if (terminologyMode && output.type === "session.updated") client.send(JSON.stringify({ type: "ready", session_id: claims.sid, terminology_mode: true }));
+        if (output.type === "session.output_audio.delta" || output.type === "response.output_audio.delta" || output.type === "response.audio.delta") client.send(JSON.stringify({ type: "audio", delta: output.delta }));
         if (output.type === "error") closeBoth(1011, "translation_error");
         if (output.type === "session.closed") closeBoth();
       });
@@ -164,7 +174,10 @@ wss.on("connection", (client, request) => {
     if (event.type === "audio" && typeof event.audio === "string" && event.audio.length <= 180000 && upstream?.readyState === WebSocket.OPEN && !paused) {
       if (!startedAt) startedAt = Date.now();
       if (!activeStartedAt) activeStartedAt = Date.now();
-      upstream.send(JSON.stringify({ type: "session.input_audio_buffer.append", audio: event.audio }));
+      const terminologyMode = Array.isArray(claims.glossary) && claims.glossary.length > 0;
+      upstream.send(JSON.stringify(terminologyMode
+        ? { type: "input_audio_buffer.append", audio: event.audio }
+        : { type: "session.input_audio_buffer.append", audio: event.audio }));
     } else if (event.type === "pause" && !paused) {
       if (activeStartedAt) activeElapsedMs += Date.now() - activeStartedAt;
       activeStartedAt = 0;

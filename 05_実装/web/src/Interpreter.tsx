@@ -42,6 +42,11 @@ const ui = {
     endButton: "今すぐ終了",
     autoStop: "安全のため、10分で通訳を自動終了しました。",
     secondsLeft: "自動終了まで",
+    glossary: "固有名詞・専門用語（任意）",
+    glossaryHelp: "1行に1つ「話す言葉 = 通訳後の言葉」で入力します。入力した場合は用語優先モードになります。",
+    glossaryExample: "例：御言葉 = the Word of God\nShalomWorks = ShalomWorks",
+    glossaryInvalid: "各行を「話す言葉 = 通訳後の言葉」の形で入力してください（最大20件）。",
+    glossaryActive: "用語優先モード",
   },
   en: {
     title: "Live voice interpretation",
@@ -73,6 +78,11 @@ const ui = {
     endButton: "Stop now",
     autoStop: "Interpretation stopped automatically after 10 minutes for safety.",
     secondsLeft: "Automatic stop in",
+    glossary: "Names and terminology (optional)",
+    glossaryHelp: "Enter one pair per line as “spoken term = interpreted term”. Adding terms enables terminology priority mode.",
+    glossaryExample: "Example: 御言葉 = the Word of God\nShalomWorks = ShalomWorks",
+    glossaryInvalid: "Use “spoken term = interpreted term” on each line (maximum 20).",
+    glossaryActive: "Terminology priority mode",
   },
   "zh-CN": {
     title: "实时语音口译",
@@ -104,6 +114,11 @@ const ui = {
     endButton: "立即结束",
     autoStop: "为防止忘记关闭，口译已在10分钟时自动结束。",
     secondsLeft: "自动结束还剩",
+    glossary: "专有名词和术语（可选）",
+    glossaryHelp: "每行输入一组“讲话用词 = 口译用词”。填写后将启用术语优先模式。",
+    glossaryExample: "例：御言葉 = the Word of God\nShalomWorks = ShalomWorks",
+    glossaryInvalid: "请按“讲话用词 = 口译用词”格式填写，每行一组（最多20组）。",
+    glossaryActive: "术语优先模式",
   },
 } as const;
 const languages = [
@@ -138,16 +153,38 @@ function encodePcm16(samples: Float32Array, inputRate: number) {
   return toBase64(new Uint8Array(output.buffer));
 }
 
+type GlossaryEntry = { source: string; translation: string };
+function parseGlossary(value: string): GlossaryEntry[] | null {
+  const lines = value.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  if (lines.length > 20) return null;
+  const entries: GlossaryEntry[] = [];
+  for (const line of lines) {
+    const match = line.match(/^(.+?)\s*(?:=|→|->|\t)\s*(.+)$/);
+    if (!match) return null;
+    const source = match[1].trim();
+    const translation = match[2].trim();
+    if (!source || !translation || source.length > 80 || translation.length > 80) return null;
+    entries.push({ source, translation });
+  }
+  return entries;
+}
+
 export function Interpreter({
   wallet,
   csrf,
   onBalance,
   locale,
+  terminologyPreset,
 }: {
   wallet: Wallet;
   csrf: string;
   onBalance: (seconds: number) => void;
   locale: Locale;
+  terminologyPreset: {
+    source: string;
+    target: string;
+    terms: GlossaryEntry[];
+  } | null;
 }) {
   const t = ui[locale];
   const [source, setSource] = useState("ja");
@@ -166,6 +203,7 @@ export function Interpreter({
   const [deviceId, setDeviceId] = useState("");
   const [elapsed, setElapsed] = useState(0);
   const [continuePrompt, setContinuePrompt] = useState(false);
+  const [glossaryText, setGlossaryText] = useState("");
   const stream = useRef<MediaStream | null>(null);
   const context = useRef<AudioContext | null>(null);
   const processor = useRef<ScriptProcessorNode | null>(null);
@@ -199,6 +237,17 @@ export function Interpreter({
   useEffect(() => {
     elapsedRef.current = elapsed;
   }, [elapsed]);
+  useEffect(() => {
+    if (!terminologyPreset) return;
+    setSource(terminologyPreset.source);
+    setTarget(terminologyPreset.target);
+    setGlossaryText(
+      terminologyPreset.terms
+        .slice(0, 20)
+        .map((entry) => `${entry.source} = ${entry.translation}`)
+        .join("\n"),
+    );
+  }, [terminologyPreset]);
   useEffect(() => {
     if (autoPrepareStarted.current) return;
     autoPrepareStarted.current = true;
@@ -282,6 +331,11 @@ export function Interpreter({
       setMessage(t.empty);
       return;
     }
+    const glossary = parseGlossary(glossaryText);
+    if (glossary === null) {
+      setMessage(t.glossaryInvalid);
+      return;
+    }
     try {
       await prepare();
       reconnectCount.current = 0;
@@ -291,7 +345,7 @@ export function Interpreter({
       stopAt.current = 10 * 60;
       setContinuePrompt(false);
       setStatus("connecting");
-      await connect();
+      await connect(glossary);
     } catch (error) {
       finishSession();
       setMessage(
@@ -303,7 +357,7 @@ export function Interpreter({
       );
     }
   }
-  async function connect() {
+  async function connect(glossary = parseGlossary(glossaryText) || []) {
     const authorization = await api<{
       gateway_url: string;
       access_token: string;
@@ -314,6 +368,7 @@ export function Interpreter({
         body: JSON.stringify({
           source_language: source,
           target_language: target,
+          glossary,
         }),
       },
       csrf,
@@ -498,7 +553,7 @@ export function Interpreter({
     }
   }
   return (
-    <section className="interpreter-app">
+    <section className="interpreter-app" id="live-interpreter">
       <div className="app-heading">
         <div>
           <p className="section-kicker">LIVE INTERPRETER</p>
@@ -557,6 +612,20 @@ export function Interpreter({
             </option>
           ))}
         </select>
+      </label>
+      <label className="glossary-field">
+        <span>{t.glossary}</span>
+        <textarea
+          value={glossaryText}
+          onChange={(e) => setGlossaryText(e.target.value)}
+          placeholder={t.glossaryExample}
+          rows={3}
+          disabled={status !== "idle"}
+        />
+        <small>{t.glossaryHelp}</small>
+        {glossaryText.trim() && parseGlossary(glossaryText) !== null && (
+          <strong>{t.glossaryActive} · {parseGlossary(glossaryText)?.length ?? 0}</strong>
+        )}
       </label>
       <div className="meter">
         <div style={{ width: `${level}%` }} />

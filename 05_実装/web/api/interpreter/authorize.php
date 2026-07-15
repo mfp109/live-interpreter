@@ -12,6 +12,21 @@ $target = (string)($body['target_language'] ?? '');
 $allowed = ['ar','bn','zh','nl','en','fr','de','hi','id','it','ja','ko','pt','ru','es','sv','th','tr','uk','vi'];
 if (!in_array($source, $allowed, true) || !in_array($target, $allowed, true) || $source === $target) json_error('LANGUAGE_PAIR_INVALID', 'Language pair is not available.');
 
+$glossary = [];
+$rawGlossary = $body['glossary'] ?? [];
+if (!is_array($rawGlossary) || count($rawGlossary) > 20) {
+    json_error('GLOSSARY_INVALID', 'Glossary is not valid.');
+}
+foreach ($rawGlossary as $entry) {
+    if (!is_array($entry)) json_error('GLOSSARY_INVALID', 'Glossary is not valid.');
+    $term = trim((string)($entry['source'] ?? ''));
+    $translation = trim((string)($entry['translation'] ?? ''));
+    if ($term === '' || $translation === '' || mb_strlen($term) > 80 || mb_strlen($translation) > 80 || preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', $term . $translation)) {
+        json_error('GLOSSARY_INVALID', 'Glossary is not valid.');
+    }
+    $glossary[] = ['source' => $term, 'translation' => $translation];
+}
+
 $pdo = db($config);
 $pdo->beginTransaction();
 expire_credit_lots($pdo,$user['id']);
@@ -26,5 +41,5 @@ $pdo->prepare('INSERT INTO translation_sessions (id,user_id,source_language,targ
     ->execute([$sessionId, $user['id'], $source, $target]);
 $pdo->commit();
 $expires = time() + 120;
-$token = create_gateway_token($config, ['sid'=>$sessionId,'uid'=>$user['id'],'src'=>$source,'dst'=>$target,'exp'=>$expires,'nonce'=>bin2hex(random_bytes(12))]);
+$token = create_gateway_token($config, ['sid'=>$sessionId,'uid'=>$user['id'],'src'=>$source,'dst'=>$target,'glossary'=>$glossary,'exp'=>$expires,'nonce'=>bin2hex(random_bytes(12))]);
 json_response(['ok'=>true,'gateway_url'=>$config['gateway_url'],'access_token'=>$token,'expires_at'=>$expires,'session_id'=>$sessionId,'available_seconds'=>$available]);
