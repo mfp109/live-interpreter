@@ -39,7 +39,7 @@ test("voice interpretation consumes 12 LI credits per second", async () => {
     new URL("api/interpreter/settle.php", root),
     "utf8",
   );
-  assert.match(settlement, /\$creditsPerSecond = 12/);
+  assert.match(settlement, /\? 1 : 12/);
   assert.match(settlement, /\$requestedCredits=\$seconds\*\$creditsPerSecond/);
 });
 

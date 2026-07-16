@@ -1,0 +1,52 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import {
+  buildTranscriptionSession,
+  isCaptionMode,
+  mapTranscriptionEvent,
+} from "../src/transcription.mjs";
+
+test("caption mode is limited to Japanese speech and Japanese captions", () => {
+  assert.equal(isCaptionMode({ mode: "caption", src: "ja", dst: "ja" }), true);
+  assert.equal(isCaptionMode({ mode: "caption", src: "en", dst: "en" }), false);
+  assert.equal(
+    isCaptionMode({ mode: "interpretation", src: "ja", dst: "ja" }),
+    false,
+  );
+});
+
+test("realtime whisper session uses Japanese low-latency transcription", () => {
+  const session = buildTranscriptionSession();
+  assert.equal(session.type, "transcription");
+  assert.deepEqual(session.audio.input.format, {
+    type: "audio/pcm",
+    rate: 24000,
+  });
+  assert.equal(session.audio.input.transcription.model, "gpt-realtime-whisper");
+  assert.equal(session.audio.input.transcription.language, "ja");
+  assert.equal(session.audio.input.transcription.delay, "low");
+  assert.equal(session.audio.input.turn_detection, null);
+});
+
+test("transcription events are reduced to subtitle-only browser messages", () => {
+  assert.deepEqual(
+    mapTranscriptionEvent({
+      type: "conversation.item.input_audio_transcription.delta",
+      item_id: "item_1",
+      delta: "こんにちは",
+    }),
+    { type: "caption_delta", item_id: "item_1", delta: "こんにちは" },
+  );
+  assert.deepEqual(
+    mapTranscriptionEvent({
+      type: "conversation.item.input_audio_transcription.completed",
+      item_id: "item_1",
+      transcript: "こんにちは。",
+    }),
+    {
+      type: "caption_completed",
+      item_id: "item_1",
+      transcript: "こんにちは。",
+    },
+  );
+});

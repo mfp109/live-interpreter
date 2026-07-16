@@ -11,9 +11,16 @@ import {
 import { api, ApiError, formatCredits, Wallet } from "./api";
 
 type Locale = "ja" | "en" | "zh-CN";
+type InterpreterMode = "interpretation" | "caption";
 const ui = {
   ja: {
     title: "リアルタイム音声通訳",
+    captionTitle: "日本語リアルタイム字幕",
+    interpretationMode: "音声通訳",
+    captionMode: "日本語字幕",
+    captionPair: "日本語音声 → 日本語字幕",
+    captionHelp: "話した日本語を、音声を出さずにリアルタイムで字幕表示します。",
+    captionWaiting: "マイクに向かって話すと、ここに字幕が表示されます。",
     remain: "LIクレジット残高",
     input: "入力言語",
     output: "出力言語",
@@ -23,12 +30,14 @@ const ui = {
     mute: "ミュート",
     unmute: "ミュート解除",
     start: "通訳を開始",
+    startCaption: "字幕を開始",
     stop: "通訳を終了",
     pause: "一時停止",
     resume: "再開",
     stopping: "終了処理中…",
     idle: "○ 待機中",
     live: "● 通訳中 — 話し続けてください",
+    captionLive: "● 字幕表示中 — 話し続けてください",
     paused: "Ⅱ 一時停止中 — 時間は消費されません",
     headphones: "イヤホン推奨",
     same: "入力言語と出力言語を別にしてください。",
@@ -55,6 +64,13 @@ const ui = {
   },
   en: {
     title: "Live voice interpretation",
+    captionTitle: "Live Japanese captions",
+    interpretationMode: "Voice interpretation",
+    captionMode: "Japanese captions",
+    captionPair: "Japanese speech → Japanese captions",
+    captionHelp:
+      "Shows live Japanese captions without generating spoken audio.",
+    captionWaiting: "Speak into the microphone to show captions here.",
     remain: "LI Credit balance",
     input: "Input language",
     output: "Output language",
@@ -64,12 +80,14 @@ const ui = {
     mute: "Mute",
     unmute: "Unmute",
     start: "Start interpreting",
+    startCaption: "Start captions",
     stop: "Stop interpreting",
     pause: "Pause",
     resume: "Resume",
     stopping: "Stopping…",
     idle: "○ Ready",
     live: "● Live — keep speaking",
+    captionLive: "● Captions live — keep speaking",
     paused: "Ⅱ Paused — no time is being used",
     headphones: "Headphones recommended",
     same: "Choose different input and output languages.",
@@ -99,6 +117,12 @@ const ui = {
   },
   "zh-CN": {
     title: "实时语音口译",
+    captionTitle: "实时日语字幕",
+    interpretationMode: "语音口译",
+    captionMode: "日语字幕",
+    captionPair: "日语语音 → 日语字幕",
+    captionHelp: "不生成语音，仅将日语讲话实时显示为字幕。",
+    captionWaiting: "请对着麦克风讲话，字幕会显示在这里。",
     remain: "LI积分余额",
     input: "输入语言",
     output: "输出语言",
@@ -108,12 +132,14 @@ const ui = {
     mute: "静音",
     unmute: "取消静音",
     start: "开始口译",
+    startCaption: "开始字幕",
     stop: "结束口译",
     pause: "暂停",
     resume: "继续",
     stopping: "正在结束…",
     idle: "○ 待机",
     live: "● 口译中 — 请继续说话",
+    captionLive: "● 字幕显示中 — 请继续说话",
     paused: "Ⅱ 已暂停 — 不会扣除时间",
     headphones: "建议使用耳机",
     same: "请选择不同的输入和输出语言。",
@@ -213,6 +239,7 @@ export function Interpreter({
   } | null;
 }) {
   const t = ui[locale];
+  const [mode, setMode] = useState<InterpreterMode>("interpretation");
   const [source, setSource] = useState("ja");
   const [target, setTarget] = useState("en");
   const [status, setStatus] = useState<
@@ -231,6 +258,12 @@ export function Interpreter({
   const [continuePrompt, setContinuePrompt] = useState(false);
   const [glossaryText, setGlossaryText] = useState("");
   const [useTerminologyMode, setUseTerminologyMode] = useState(false);
+  const [captionLines, setCaptionLines] = useState<
+    { itemId: string; text: string; order: number }[]
+  >([]);
+  const [captionDrafts, setCaptionDrafts] = useState<Record<string, string>>(
+    {},
+  );
   const stream = useRef<MediaStream | null>(null);
   const context = useRef<AudioContext | null>(null);
   const processor = useRef<ScriptProcessorNode | null>(null);
@@ -246,6 +279,8 @@ export function Interpreter({
   const remainingRef = useRef(remaining);
   const reconnectTimer = useRef<number | null>(null);
   const autoPrepareStarted = useRef(false);
+  const captionOrder = useRef(new Map<string, number>());
+  const captionNextOrder = useRef(0);
   const elapsedRef = useRef(0);
   const warningAt = useRef(9 * 60);
   const stopAt = useRef(10 * 60);
@@ -266,6 +301,7 @@ export function Interpreter({
   }, [elapsed]);
   useEffect(() => {
     if (!terminologyPreset) return;
+    if (mode === "caption") return;
     setSource(terminologyPreset.source);
     setTarget(terminologyPreset.target);
     setGlossaryText(
@@ -274,7 +310,13 @@ export function Interpreter({
         .map((entry) => `${entry.source} = ${entry.translation}`)
         .join("\n"),
     );
-  }, [terminologyPreset]);
+  }, [terminologyPreset, mode]);
+  useEffect(() => {
+    if (mode !== "caption") return;
+    setSource("ja");
+    setTarget("ja");
+    setUseTerminologyMode(false);
+  }, [mode]);
   useEffect(() => {
     if (autoPrepareStarted.current) return;
     autoPrepareStarted.current = true;
@@ -350,7 +392,7 @@ export function Interpreter({
   async function start() {
     setMessage("");
     userStopped.current = false;
-    if (source === target) {
+    if (mode === "interpretation" && source === target) {
       setMessage(t.same);
       return;
     }
@@ -358,7 +400,8 @@ export function Interpreter({
       setMessage(t.empty);
       return;
     }
-    const parsedGlossary = parseGlossary(glossaryText);
+    const parsedGlossary =
+      mode === "caption" ? [] : parseGlossary(glossaryText);
     if (useTerminologyMode && parsedGlossary === null) {
       setMessage(t.glossaryInvalid);
       return;
@@ -371,6 +414,12 @@ export function Interpreter({
     try {
       await prepare();
       reconnectCount.current = 0;
+      if (mode === "caption") {
+        setCaptionLines([]);
+        setCaptionDrafts({});
+        captionOrder.current.clear();
+        captionNextOrder.current = 0;
+      }
       setElapsed(0);
       elapsedRef.current = 0;
       warningAt.current = 9 * 60;
@@ -398,8 +447,9 @@ export function Interpreter({
       {
         method: "POST",
         body: JSON.stringify({
-          source_language: source,
-          target_language: target,
+          source_language: mode === "caption" ? "ja" : source,
+          target_language: mode === "caption" ? "ja" : target,
+          mode,
           glossary,
           use_terminology_mode: useTerminologyMode,
         }),
@@ -428,7 +478,8 @@ export function Interpreter({
             const next = elapsedRef.current + 1;
             elapsedRef.current = next;
             setElapsed(next);
-            setRemaining((credits) => Math.max(0, credits - 12));
+            const rate = mode === "caption" ? 1 : 12;
+            setRemaining((credits) => Math.max(0, credits - rate));
             if (next === warningAt.current) setContinuePrompt(true);
             if (next >= stopAt.current) {
               setContinuePrompt(false);
@@ -457,6 +508,37 @@ export function Interpreter({
         proc.connect(ctx.destination);
       }
       if (data.type === "audio") play(data.delta);
+      if (data.type === "caption_delta" && data.item_id && data.delta) {
+        if (!captionOrder.current.has(data.item_id)) {
+          captionOrder.current.set(data.item_id, captionNextOrder.current++);
+        }
+        setCaptionDrafts((drafts) => ({
+          ...drafts,
+          [data.item_id]: `${drafts[data.item_id] || ""}${data.delta}`,
+        }));
+      }
+      if (data.type === "caption_completed" && data.item_id) {
+        const transcript = String(data.transcript || "").trim();
+        setCaptionDrafts((drafts) => {
+          const next = { ...drafts };
+          delete next[data.item_id];
+          return next;
+        });
+        if (transcript) {
+          if (!captionOrder.current.has(data.item_id)) {
+            captionOrder.current.set(data.item_id, captionNextOrder.current++);
+          }
+          const order = captionOrder.current.get(data.item_id) || 0;
+          setCaptionLines((lines) =>
+            [
+              ...lines.filter((line) => line.itemId !== data.item_id),
+              { itemId: data.item_id, text: transcript, order },
+            ]
+              .sort((a, b) => a.order - b.order)
+              .slice(-6),
+          );
+        }
+      }
       if (data.type === "paused") {
         pausedRef.current = true;
         setStatus("paused");
@@ -591,47 +673,75 @@ export function Interpreter({
       <div className="app-heading">
         <div>
           <p className="section-kicker">LIVE INTERPRETER</p>
-          <h2>{t.title}</h2>
+          <h2>{mode === "caption" ? t.captionTitle : t.title}</h2>
         </div>
         <div className="wallet-pill">
           {t.remain}
           <strong>{formatCredits(remaining)}</strong>
           <small>
-            {t.used} {formatCredits(elapsed * 12)}
+            {t.used} {formatCredits(elapsed * (mode === "caption" ? 1 : 12))}
           </small>
         </div>
       </div>
-      <div className="language-row app-languages">
-        <label>
-          {t.input}
-          <select
-            value={source}
-            onChange={(e) => setSource(e.target.value)}
-            disabled={status !== "idle"}
-          >
-            {languages.map(([v, l]) => (
-              <option value={v} key={v}>
-                {l}
-              </option>
-            ))}
-          </select>
-        </label>
-        <span className="swap">→</span>
-        <label>
-          {t.output}
-          <select
-            value={target}
-            onChange={(e) => setTarget(e.target.value)}
-            disabled={status !== "idle"}
-          >
-            {languages.map(([v, l]) => (
-              <option value={v} key={v}>
-                {l}
-              </option>
-            ))}
-          </select>
-        </label>
+      <div className="mode-switch" role="group" aria-label="Mode">
+        <button
+          type="button"
+          className={mode === "interpretation" ? "active" : ""}
+          onClick={() => {
+            setMode("interpretation");
+            if (source === target) setTarget("en");
+          }}
+          disabled={status !== "idle"}
+        >
+          {t.interpretationMode}
+        </button>
+        <button
+          type="button"
+          className={mode === "caption" ? "active" : ""}
+          onClick={() => setMode("caption")}
+          disabled={status !== "idle"}
+        >
+          {t.captionMode}
+        </button>
       </div>
+      {mode === "caption" ? (
+        <div className="caption-pair">
+          <strong>{t.captionPair}</strong>
+          <span>{t.captionHelp}</span>
+        </div>
+      ) : (
+        <div className="language-row app-languages">
+          <label>
+            {t.input}
+            <select
+              value={source}
+              onChange={(e) => setSource(e.target.value)}
+              disabled={status !== "idle"}
+            >
+              {languages.map(([v, l]) => (
+                <option value={v} key={v}>
+                  {l}
+                </option>
+              ))}
+            </select>
+          </label>
+          <span className="swap">→</span>
+          <label>
+            {t.output}
+            <select
+              value={target}
+              onChange={(e) => setTarget(e.target.value)}
+              disabled={status !== "idle"}
+            >
+              {languages.map(([v, l]) => (
+                <option value={v} key={v}>
+                  {l}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      )}
       <label className="device-select">
         {t.mic}
         <select
@@ -647,38 +757,56 @@ export function Interpreter({
           ))}
         </select>
       </label>
-      <label className="glossary-field">
-        <span>{t.glossary}</span>
-        <textarea
-          value={glossaryText}
-          onChange={(e) => setGlossaryText(e.target.value)}
-          placeholder={t.glossaryExample}
-          rows={3}
-          disabled={status !== "idle"}
-        />
-        <small>{t.glossaryHelp}</small>
-        <button
-          type="button"
-          className={
-            useTerminologyMode
-              ? "terminology-toggle active"
-              : "terminology-toggle"
-          }
-          onClick={() => setUseTerminologyMode((enabled) => !enabled)}
-          disabled={
-            status !== "idle" ||
-            parseGlossary(glossaryText) === null ||
-            (parseGlossary(glossaryText)?.length ?? 0) === 0
-          }
-        >
-          {useTerminologyMode ? t.glossaryDisable : t.glossaryEnable}
-        </button>
-        {useTerminologyMode && (
-          <strong>
-            {t.glossaryActive} · {parseGlossary(glossaryText)?.length ?? 0}
-          </strong>
-        )}
-      </label>
+      {mode === "interpretation" && (
+        <label className="glossary-field">
+          <span>{t.glossary}</span>
+          <textarea
+            value={glossaryText}
+            onChange={(e) => setGlossaryText(e.target.value)}
+            placeholder={t.glossaryExample}
+            rows={3}
+            disabled={status !== "idle"}
+          />
+          <small>{t.glossaryHelp}</small>
+          <button
+            type="button"
+            className={
+              useTerminologyMode
+                ? "terminology-toggle active"
+                : "terminology-toggle"
+            }
+            onClick={() => setUseTerminologyMode((enabled) => !enabled)}
+            disabled={
+              status !== "idle" ||
+              parseGlossary(glossaryText) === null ||
+              (parseGlossary(glossaryText)?.length ?? 0) === 0
+            }
+          >
+            {useTerminologyMode ? t.glossaryDisable : t.glossaryEnable}
+          </button>
+          {useTerminologyMode && (
+            <strong>
+              {t.glossaryActive} · {parseGlossary(glossaryText)?.length ?? 0}
+            </strong>
+          )}
+        </label>
+      )}
+      {mode === "caption" && (
+        <div className="caption-screen" aria-live="polite">
+          {captionLines.map((line) => (
+            <p key={line.itemId}>{line.text}</p>
+          ))}
+          {Object.entries(captionDrafts).map(([itemId, text]) => (
+            <p className="partial" key={itemId}>
+              {text}
+            </p>
+          ))}
+          {captionLines.length === 0 &&
+            Object.keys(captionDrafts).length === 0 && (
+              <p className="placeholder">{t.captionWaiting}</p>
+            )}
+        </div>
+      )}
       <div className="meter">
         <div style={{ width: `${level}%` }} />
         <span>
@@ -690,28 +818,34 @@ export function Interpreter({
           <Mic size={17} />
           {t.enable}
         </button>
-        <button className="secondary" onClick={testSound}>
-          <Volume2 size={17} />
-          {t.test}
-        </button>
-        <button
-          className="secondary"
-          onClick={() => setMuted((value) => !value)}
-        >
-          {muted ? <VolumeX size={17} /> : <Volume2 size={17} />}{" "}
-          {muted ? t.unmute : t.mute}
-        </button>
-        <label>
-          <Volume2 size={16} />
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step=".05"
-            value={volume}
-            onChange={(e) => setVolume(Number(e.target.value))}
-          />
-        </label>
+        {mode === "interpretation" && (
+          <button className="secondary" onClick={testSound}>
+            <Volume2 size={17} />
+            {t.test}
+          </button>
+        )}
+        {mode === "interpretation" && (
+          <button
+            className="secondary"
+            onClick={() => setMuted((value) => !value)}
+          >
+            {muted ? <VolumeX size={17} /> : <Volume2 size={17} />}{" "}
+            {muted ? t.unmute : t.mute}
+          </button>
+        )}
+        {mode === "interpretation" && (
+          <label>
+            <Volume2 size={16} />
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step=".05"
+              value={volume}
+              onChange={(e) => setVolume(Number(e.target.value))}
+            />
+          </label>
+        )}
       </div>
       {status === "idle" ? (
         <button
@@ -720,7 +854,7 @@ export function Interpreter({
           disabled={remaining <= 0}
         >
           <Mic />
-          {t.start}
+          {mode === "caption" ? t.startCaption : t.start}
         </button>
       ) : (
         <div className="live-actions">
@@ -741,11 +875,19 @@ export function Interpreter({
         </div>
       )}
       <p className={`status-line ${status}`}>
-        {status === "live" ? t.live : status === "paused" ? t.paused : t.idle}
-        <span>
-          <Headphones size={15} />
-          {t.headphones}
-        </span>
+        {status === "live"
+          ? mode === "caption"
+            ? t.captionLive
+            : t.live
+          : status === "paused"
+            ? t.paused
+            : t.idle}
+        {mode === "interpretation" && (
+          <span>
+            <Headphones size={15} />
+            {t.headphones}
+          </span>
+        )}
       </p>
       {message && <p className="form-message">{message}</p>}
       {continuePrompt && (
