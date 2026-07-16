@@ -8,13 +8,13 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
-import { api, ApiError, formatTime, Wallet } from "./api";
+import { api, ApiError, formatCredits, Wallet } from "./api";
 
 type Locale = "ja" | "en" | "zh-CN";
 const ui = {
   ja: {
     title: "リアルタイム音声通訳",
-    remain: "残り",
+    remain: "LIクレジット残高",
     input: "入力言語",
     output: "出力言語",
     mic: "入力マイク",
@@ -35,7 +35,7 @@ const ui = {
     empty: "通訳時間がありません。",
     closed: "通訳接続が終了しました。",
     reconnecting: "接続が切れました。再接続しています…",
-    used: "今回の利用時間",
+    used: "今回の消費",
     continueTitle: "通訳を続けますか？",
     continueText: "まもなく10分です。操作がなければ自動的に通訳を終了します。",
     continueButton: "通訳を続ける",
@@ -55,7 +55,7 @@ const ui = {
   },
   en: {
     title: "Live voice interpretation",
-    remain: "Remaining",
+    remain: "LI Credit balance",
     input: "Input language",
     output: "Output language",
     mic: "Input microphone",
@@ -76,7 +76,7 @@ const ui = {
     empty: "No interpretation time remains.",
     closed: "The interpretation connection ended.",
     reconnecting: "Connection lost. Reconnecting…",
-    used: "This session",
+    used: "Used this session",
     continueTitle: "Continue interpreting?",
     continueText:
       "You are approaching 10 minutes. Interpretation will stop automatically if there is no response.",
@@ -99,7 +99,7 @@ const ui = {
   },
   "zh-CN": {
     title: "实时语音口译",
-    remain: "剩余",
+    remain: "LI积分余额",
     input: "输入语言",
     output: "输出语言",
     mic: "输入麦克风",
@@ -120,7 +120,7 @@ const ui = {
     empty: "没有剩余口译时间。",
     closed: "口译连接已结束。",
     reconnecting: "连接中断，正在重新连接…",
-    used: "本次使用",
+    used: "本次消耗",
     continueTitle: "要继续口译吗？",
     continueText: "即将达到10分钟。如无操作，口译将自动结束。",
     continueButton: "继续口译",
@@ -428,6 +428,7 @@ export function Interpreter({
             const next = elapsedRef.current + 1;
             elapsedRef.current = next;
             setElapsed(next);
+            setRemaining((credits) => Math.max(0, credits - 12));
             if (next === warningAt.current) setContinuePrompt(true);
             if (next >= stopAt.current) {
               setContinuePrompt(false);
@@ -594,9 +595,9 @@ export function Interpreter({
         </div>
         <div className="wallet-pill">
           {t.remain}
-          <strong>{formatTime(remaining)}</strong>
+          <strong>{formatCredits(remaining)}</strong>
           <small>
-            {t.used} {formatTime(elapsed)}
+            {t.used} {formatCredits(elapsed * 12)}
           </small>
         </div>
       </div>

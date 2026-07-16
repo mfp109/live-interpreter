@@ -15,9 +15,20 @@ export type Product = {
   id: string;
   code: string;
   name_key: string;
+  product_type: "intro" | "subscription" | "topup" | "legacy";
+  billing_interval: "one_time" | "month";
   seconds_granted: number;
   price_minor: number;
   currency: string;
+};
+export type Subscription = {
+  id: string;
+  product_id: string;
+  stripe_subscription_id: string;
+  status: string;
+  cancel_at_period_end: number;
+  current_period_end: string | null;
+  code: string;
 };
 
 export class ApiError extends Error {
@@ -64,3 +75,6 @@ export async function api<T>(
 
 export const formatTime = (seconds: number) =>
   `${Math.floor(seconds / 60).toLocaleString()}:${String(Math.max(0, seconds % 60)).padStart(2, "0")}`;
+
+export const formatCredits = (credits: number) =>
+  Math.max(0, Math.floor(credits)).toLocaleString();

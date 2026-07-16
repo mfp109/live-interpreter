@@ -42,3 +42,20 @@ function remove_paid_lots(PDO $pdo,string $userId,int $seconds): int
     foreach($stmt->fetchAll() as $lot){if($remaining<=0)break;$take=min($remaining,(int)$lot['seconds_remaining']);$pdo->prepare('UPDATE credit_lots SET seconds_remaining=seconds_remaining-? WHERE id=?')->execute([$take,$lot['id']]);$remaining-=$take;$removed+=$take;}
     if($removed>0)$pdo->prepare('UPDATE wallets SET paid_seconds=paid_seconds-?,version=version+1 WHERE user_id=?')->execute([$removed,$userId]);return $removed;
 }
+
+function reset_subscription_credit_lots(PDO $pdo, string $userId, string $cycleReference): int
+{
+    $stmt=$pdo->prepare("SELECT id,seconds_remaining FROM credit_lots WHERE user_id=? AND balance_type='paid' AND source_type='subscription' AND seconds_remaining>0 FOR UPDATE");
+    $stmt->execute([$userId]);
+    $removed=0;
+    foreach($stmt->fetchAll() as $lot){
+        $seconds=(int)$lot['seconds_remaining'];
+        if($seconds<=0)continue;
+        $pdo->prepare('UPDATE credit_lots SET seconds_remaining=0 WHERE id=?')->execute([$lot['id']]);
+        $pdo->prepare('UPDATE wallets SET paid_seconds=GREATEST(0,paid_seconds-?),version=version+1 WHERE user_id=?')->execute([$seconds,$userId]);
+        $pdo->prepare("INSERT IGNORE INTO credit_ledger (id,user_id,entry_type,paid_delta,reference_type,reference_id,idempotency_key,note) VALUES (?,?,'expiry',?,'subscription_cycle',?,?,'Monthly subscription credits reset')")
+            ->execute([uuid_v4(),$userId,-$seconds,$cycleReference,'subscription-reset:'.$lot['id']]);
+        $removed+=$seconds;
+    }
+    return $removed;
+}

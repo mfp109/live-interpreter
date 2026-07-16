@@ -9,7 +9,14 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { api, formatTime, Product, User, Wallet } from "./api";
+import {
+  api,
+  formatCredits,
+  Product,
+  Subscription,
+  User,
+  Wallet,
+} from "./api";
 import { AuthDialog } from "./AuthDialog";
 import { Interpreter } from "./Interpreter";
 import { AdminPanel } from "./AdminPanel";
@@ -38,15 +45,15 @@ const copy = {
     to: "出力言語",
     start: "無料で始める",
     why: "伝えたい瞬間を、待たせない。",
-    pricing: "必要な時間だけ購入",
+    pricing: "月額プランと追加クレジット",
     notice: "音声と翻訳内容は原則保存しません。",
     verifySuccess: "メール確認が完了しました。無料時間を付与しました。",
     checkoutError: "決済を開始できませんでした。",
     greeting: "こんにちは",
-    remaining: "残り通訳時間",
+    remaining: "LIクレジット残高",
     free: "無料",
     paid: "有料",
-    addTime: "通訳時間を追加",
+    addTime: "クレジットを追加",
     logout: "ログアウト",
     demoPlaceholder: "日本語→英語の音声付きデモ",
     demoTitle: "話し続けても、通訳は止まりません。",
@@ -59,9 +66,14 @@ const copy = {
     listenTitle: "聞く",
     listenText: "聞き手は選択した言語の自然な音声を聞きます。",
     pricingNote:
-      "新規登録は1分無料。初回購入限定で30分を500円で提供します。購入時間は秒単位で消費されます。",
+      "1クレジットは日本語音声を日本語字幕にする1秒分が基準です。音声通訳は1秒につき12クレジットを消費します。月額分は毎月更新され、追加購入分は180日間有効です。",
     introName: "初回お試し",
     introBadge: "初回購入限定",
+    subscriptionHeading: "月額プラン",
+    topupHeading: "追加クレジット",
+    monthly: "月",
+    credits: "LIクレジット",
+    manageSubscription: "サブスクリプションを管理",
     faqTitle: "よくある質問",
     faq1q: "会話は保存されますか？",
     faq1a:
@@ -98,15 +110,15 @@ const copy = {
     to: "Output language",
     start: "Start for free",
     why: "Keep the moment moving.",
-    pricing: "Buy only the time you need",
+    pricing: "Monthly plans and extra credits",
     notice: "We do not normally store audio or translated content.",
     verifySuccess: "Email verified. Your free time has been added.",
     checkoutError: "Payment could not be started.",
     greeting: "Welcome",
-    remaining: "Remaining interpretation time",
+    remaining: "LI Credit balance",
     free: "Free",
     paid: "Paid",
-    addTime: "Add interpretation time",
+    addTime: "Add credits",
     logout: "Sign out",
     demoPlaceholder: "Japanese-to-English audio demo",
     demoTitle: "Keep speaking. Interpretation keeps moving.",
@@ -121,9 +133,14 @@ const copy = {
     listenText:
       "Your audience hears a natural voice in their selected language.",
     pricingNote:
-      "New accounts receive 1 free minute. Your first purchase includes 30 minutes for ¥500. Purchased time is used by the second.",
+      "One credit is based on one second of Japanese speech-to-Japanese captions. Voice interpretation uses 12 credits per second. Monthly credits refresh each billing cycle; extra credits remain valid for 180 days.",
     introName: "First Try",
     introBadge: "FIRST PURCHASE ONLY",
+    subscriptionHeading: "Monthly plans",
+    topupHeading: "Extra credits",
+    monthly: "month",
+    credits: "LI Credits",
+    manageSubscription: "Manage subscription",
     faqTitle: "Frequently asked questions",
     faq1q: "Do you store conversations?",
     faq1a:
@@ -160,15 +177,15 @@ const copy = {
     to: "输出语言",
     start: "免费开始",
     why: "让沟通无需等待。",
-    pricing: "只购买需要的时间",
+    pricing: "月度套餐和追加积分",
     notice: "原则上不保存音频或翻译内容。",
     verifySuccess: "邮箱验证完成，免费时间已添加。",
     checkoutError: "无法开始付款。",
     greeting: "您好",
-    remaining: "剩余口译时间",
+    remaining: "LI积分余额",
     free: "免费",
     paid: "已购买",
-    addTime: "添加口译时间",
+    addTime: "追加积分",
     logout: "退出登录",
     demoPlaceholder: "日语转英语音频演示",
     demoTitle: "持续说话，口译不会停止。",
@@ -180,9 +197,14 @@ const copy = {
     listenTitle: "收听",
     listenText: "听众会听到所选语言的自然语音。",
     pricingNote:
-      "新注册用户可免费使用1分钟。首次购买限时30分钟500日元。购买时间按秒扣除。",
+      "1积分以1秒日语语音转日语字幕的API用量为基准。语音口译每秒消耗12积分。月度积分按账单周期更新，追加积分有效期为180天。",
     introName: "首次体验",
     introBadge: "仅限首次购买",
+    subscriptionHeading: "月度套餐",
+    topupHeading: "追加积分",
+    monthly: "月",
+    credits: "LI积分",
+    manageSubscription: "管理订阅",
     faqTitle: "常见问题",
     faq1q: "会保存对话吗？",
     faq1a:
@@ -207,32 +229,70 @@ const fallbackProducts = [
     id: "00000000-0000-4000-8000-000000000030",
     code: "intro_30",
     name_key: "product.intro",
-    seconds_granted: 1800,
+    product_type: "intro" as const,
+    billing_interval: "one_time" as const,
+    seconds_granted: 21600,
     price_minor: 500,
     currency: "JPY",
   },
   {
-    id: "00000000-0000-4000-8000-000000000060",
-    code: "starter_60",
-    name_key: "Starter",
-    seconds_granted: 3600,
+    id: "10000000-0000-4000-8000-000000000001",
+    code: "subscription_lite",
+    name_key: "product.subscription.lite",
+    product_type: "subscription" as const,
+    billing_interval: "month" as const,
+    seconds_granted: 43200,
+    price_minor: 980,
+    currency: "JPY",
+  },
+  {
+    id: "10000000-0000-4000-8000-000000000002",
+    code: "subscription_standard",
+    name_key: "product.subscription.standard",
+    product_type: "subscription" as const,
+    billing_interval: "month" as const,
+    seconds_granted: 108000,
+    price_minor: 1980,
+    currency: "JPY",
+  },
+  {
+    id: "10000000-0000-4000-8000-000000000003",
+    code: "subscription_pro",
+    name_key: "product.subscription.pro",
+    product_type: "subscription" as const,
+    billing_interval: "month" as const,
+    seconds_granted: 259200,
+    price_minor: 3980,
+    currency: "JPY",
+  },
+  {
+    id: "20000000-0000-4000-8000-000000000001",
+    code: "topup_small",
+    name_key: "product.topup.small",
+    product_type: "topup" as const,
+    billing_interval: "one_time" as const,
+    seconds_granted: 18000,
+    price_minor: 500,
+    currency: "JPY",
+  },
+  {
+    id: "20000000-0000-4000-8000-000000000002",
+    code: "topup_medium",
+    name_key: "product.topup.medium",
+    product_type: "topup" as const,
+    billing_interval: "one_time" as const,
+    seconds_granted: 72000,
     price_minor: 1500,
     currency: "JPY",
   },
   {
-    id: "00000000-0000-4000-8000-000000000300",
-    code: "standard_300",
-    name_key: "Standard",
-    seconds_granted: 18000,
-    price_minor: 5500,
-    currency: "JPY",
-  },
-  {
-    id: "00000000-0000-4000-8000-000000001000",
-    code: "event_1000",
-    name_key: "Event",
-    seconds_granted: 60000,
-    price_minor: 15000,
+    id: "20000000-0000-4000-8000-000000000003",
+    code: "topup_large",
+    name_key: "product.topup.large",
+    product_type: "topup" as const,
+    billing_interval: "one_time" as const,
+    seconds_granted: 180000,
+    price_minor: 3000,
     currency: "JPY",
   },
 ];
@@ -301,6 +361,7 @@ export function App() {
   });
   const [csrf, setCsrf] = useState("");
   const [products, setProducts] = useState<Product[]>(fallbackProducts);
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [flash, setFlash] = useState("");
   const [terminologyPreset, setTerminologyPreset] = useState<{
     source: string;
@@ -354,8 +415,12 @@ export function App() {
   }, []);
   async function refreshProducts() {
     try {
-      const result = await api<{ products: Product[] }>("products.php");
+      const result = await api<{
+        products: Product[];
+        subscription: Subscription | null;
+      }>("products.php");
       setProducts(result.products);
+      setSubscription(result.subscription || null);
     } catch {
       setProducts(fallbackProducts);
     }
@@ -365,10 +430,12 @@ export function App() {
       const result = await api<{
         user: User;
         wallet: Wallet;
+        subscription: Subscription | null;
         csrf_token: string;
       }>("auth/me.php");
       setUser(result.user);
       setWallet(result.wallet);
+      setSubscription(result.subscription || null);
       setCsrf(result.csrf_token);
     } catch {
       setUser(null);
@@ -399,8 +466,21 @@ export function App() {
   async function logout() {
     await api("auth/logout.php", { method: "POST" }, csrf).catch(() => {});
     setUser(null);
+    setSubscription(null);
     setView("home");
     await refreshProducts();
+  }
+  async function manageSubscription() {
+    try {
+      const result = await api<{ portal_url: string }>(
+        "subscription/portal.php",
+        { method: "POST" },
+        csrf,
+      );
+      location.href = result.portal_url;
+    } catch (e) {
+      setFlash(e instanceof Error ? e.message : t.checkoutError);
+    }
   }
   const total = Number(wallet.trial_seconds) + Number(wallet.paid_seconds);
   const path = location.pathname;
@@ -485,7 +565,7 @@ export function App() {
             className="primary small"
             onClick={() => (user ? setView("account") : setAuth("register"))}
           >
-            {user ? formatTime(total) : t.cta}
+            {user ? formatCredits(total) : t.cta}
           </button>
         </div>
       </header>
@@ -511,11 +591,16 @@ export function App() {
             {user.role !== "admin" && (
               <div className="balance-card">
                 <span>{t.remaining}</span>
-                <strong>{formatTime(total)}</strong>
+                <strong>{formatCredits(total)}</strong>
                 <small>
-                  {t.free} {formatTime(Number(wallet.trial_seconds))} ／{" "}
-                  {t.paid} {formatTime(Number(wallet.paid_seconds))}
+                  {t.free} {formatCredits(Number(wallet.trial_seconds))} ／{" "}
+                  {t.paid} {formatCredits(Number(wallet.paid_seconds))}
                 </small>
+                {subscription && (
+                  <button className="link-button" onClick={manageSubscription}>
+                    {t.manageSubscription}
+                  </button>
+                )}
               </div>
             )}
           </section>
@@ -547,12 +632,18 @@ export function App() {
               <section className="account-products">
                 <h2>{t.addTime}</h2>
                 <ProductCards
-                  products={products}
+                  products={products.filter((product) =>
+                    subscription
+                      ? product.product_type === "topup"
+                      : product.product_type === "subscription" ||
+                        product.product_type === "intro",
+                  )}
                   onChoose={checkout}
                   choose={t.choose}
-                  minutes={t.minutes}
                   introName={t.introName}
                   introBadge={t.introBadge}
+                  monthly={t.monthly}
+                  credits={t.credits}
                 />
               </section>
               <AccountTools
@@ -704,12 +795,17 @@ export function App() {
             <p className="section-kicker">SIMPLE PRICING</p>
             <h2>{t.pricing}</h2>
             <ProductCards
-              products={products}
+              products={products.filter(
+                (product) =>
+                  product.product_type === "subscription" ||
+                  product.product_type === "intro",
+              )}
               onChoose={checkout}
               choose={t.choose}
-              minutes={t.minutes}
               introName={t.introName}
               introBadge={t.introBadge}
+              monthly={t.monthly}
+              credits={t.credits}
             />
             <p className="pricing-note">{t.pricingNote}</p>
           </section>
@@ -760,22 +856,24 @@ function ProductCards({
   products,
   onChoose,
   choose,
-  minutes,
   introName,
   introBadge,
+  monthly,
+  credits,
 }: {
   products: Product[];
   onChoose: (product: Product) => void;
   choose: string;
-  minutes: string;
   introName: string;
   introBadge: string;
+  monthly: string;
+  credits: string;
 }) {
   return (
     <div className="plans">
       {products.map((product) => {
         const isIntro = product.code.startsWith("intro");
-        const isPopular = product.code.startsWith("standard");
+        const isPopular = product.code === "subscription_standard";
         return (
           <article className={isPopular ? "popular" : ""} key={product.id}>
             {(isIntro || isPopular) && (
@@ -786,18 +884,24 @@ function ProductCards({
             <h3>
               {isIntro
                 ? introName
-                : product.code.startsWith("starter")
-                  ? "Starter"
-                  : product.code.startsWith("standard")
+                : product.code === "subscription_lite"
+                  ? "Lite"
+                  : product.code === "subscription_standard"
                     ? "Standard"
-                    : "Event"}
+                    : product.code === "subscription_pro"
+                      ? "Pro"
+                      : product.code === "topup_small"
+                        ? "Small"
+                        : product.code === "topup_medium"
+                          ? "Medium"
+                          : "Large"}
             </h3>
-            <strong>¥{Number(product.price_minor).toLocaleString()}</strong>
+            <strong>
+              ¥{Number(product.price_minor).toLocaleString()}
+              {product.billing_interval === "month" ? ` / ${monthly}` : ""}
+            </strong>
             <p>
-              {Math.round(
-                Number(product.seconds_granted) / 60,
-              ).toLocaleString()}{" "}
-              {minutes}
+              {formatCredits(Number(product.seconds_granted))} {credits}
             </p>
             <button
               className={isPopular ? "primary" : "secondary"}

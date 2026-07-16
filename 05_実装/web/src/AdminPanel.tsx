@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
-import { api, formatTime } from "./api";
+import { api, formatCredits, formatTime } from "./api";
 
 type Stats = {
   members: number;
@@ -87,8 +87,8 @@ export function AdminPanel({ csrf }: { csrf: string }) {
     }
   }
   async function adjust(user: Member) {
-    const minutes = prompt(`${user.email} に追加する分数（減算はマイナス）`);
-    if (minutes === null) return;
+    const credits = prompt(`${user.email} に追加するLIクレジット（減算はマイナス）`);
+    if (credits === null) return;
     const reason = prompt("調整理由（5文字以上）");
     if (!reason) return;
     try {
@@ -98,7 +98,7 @@ export function AdminPanel({ csrf }: { csrf: string }) {
           method: "POST",
           body: JSON.stringify({
             user_id: user.id,
-            paid_seconds_delta: Math.round(Number(minutes) * 60),
+            paid_seconds_delta: Math.round(Number(credits)),
             reason,
           }),
         },
@@ -191,8 +191,8 @@ export function AdminPanel({ csrf }: { csrf: string }) {
             <strong>{formatTime(stats.seconds_used)}</strong>
           </article>
           <article>
-            <span>未使用有料時間</span>
-            <strong>{formatTime(stats.paid_seconds_outstanding)}</strong>
+            <span>未使用有料クレジット</span>
+            <strong>{formatCredits(stats.paid_seconds_outstanding)}</strong>
           </article>
           <article>
             <span>本日のセッション</span>
@@ -228,8 +228,8 @@ export function AdminPanel({ csrf }: { csrf: string }) {
                   <small>{user.email_verified_at ? "認証済" : "未認証"}</small>
                 </td>
                 <td>{user.status}</td>
-                <td>{formatTime(Number(user.trial_seconds))}</td>
-                <td>{formatTime(Number(user.paid_seconds))}</td>
+                <td>{formatCredits(Number(user.trial_seconds))}</td>
+                <td>{formatCredits(Number(user.paid_seconds))}</td>
                 <td>{new Date(user.created_at).toLocaleDateString()}</td>
                 <td>
                   <button onClick={() => adjust(user)}>残高調整</button>

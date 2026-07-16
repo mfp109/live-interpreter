@@ -14,6 +14,7 @@ $body = json_decode($raw, true);
 $sessionId = (string)($body['session_id'] ?? '');
 $sequence = filter_var($body['sequence'] ?? null, FILTER_VALIDATE_INT);
 $seconds = filter_var($body['seconds'] ?? null, FILTER_VALIDATE_INT);
+$creditsPerSecond = 12;
 $final = ($body['final'] ?? false) === true;
 if (!preg_match('/^[a-f0-9-]{36}$/', $sessionId) || $sequence === false || $sequence < 1 || $seconds === false || $seconds < 0 || $seconds > 30 || ($seconds === 0 && !$final)) json_error('VALIDATION_ERROR', 'Invalid settlement.');
 
@@ -33,22 +34,24 @@ try {
         $pdo->commit();
         json_response(['ok'=>true,'duplicate'=>true,'remaining_seconds'=>(int)$session['trial_seconds']+(int)$session['paid_seconds']]);
     }
-    $usage=consume_credit_lots($pdo,$session['user_id'],$seconds);$trialUsed=$usage['trial'];$paidUsed=$usage['paid'];$consumed=$usage['total'];
-    if ($consumed > 0) {
+    $requestedCredits=$seconds*$creditsPerSecond;
+    $usage=consume_credit_lots($pdo,$session['user_id'],$requestedCredits);$trialCredits=$usage['trial'];$paidCredits=$usage['paid'];$consumedCredits=$usage['total'];
+    $consumed=intdiv($consumedCredits,$creditsPerSecond);$trialUsed=min($consumed,intdiv($trialCredits,$creditsPerSecond));$paidUsed=$consumed-$trialUsed;
+    if ($consumedCredits > 0) {
         $pdo->prepare("INSERT INTO credit_ledger (id,user_id,entry_type,trial_delta,paid_delta,reference_type,reference_id,idempotency_key,note) VALUES (?,?,'usage',?,?, 'translation_session',?,?, 'Realtime usage')")
-            ->execute([uuid_v4(),$session['user_id'],-$trialUsed,-$paidUsed,$sessionId,'usage:'.$sessionId.':'.$sequence]);
+            ->execute([uuid_v4(),$session['user_id'],-$trialCredits,-$paidCredits,$sessionId,'usage:'.$sessionId.':'.$sequence]);
         $pdo->prepare("UPDATE translation_sessions SET status='active',started_at=COALESCE(started_at,NOW()),trial_seconds_used=trial_seconds_used+?,paid_seconds_used=paid_seconds_used+? WHERE id=?")
             ->execute([$trialUsed,$paidUsed,$sessionId]);
     }
-    $remaining = (int)$session['trial_seconds'] + (int)$session['paid_seconds'] - $consumed;
-    $stop = $remaining <= 0 || $consumed < $seconds || $final;
+    $remaining = (int)$session['trial_seconds'] + (int)$session['paid_seconds'] - $consumedCredits;
+    $stop = $remaining < $creditsPerSecond || $consumedCredits < $requestedCredits || $final;
     if ($stop) {
         $status = $remaining <= 0 ? 'stopped_balance' : 'completed';
         $pdo->prepare('UPDATE translation_sessions SET status=?,ended_at=NOW() WHERE id=?')->execute([$status,$sessionId]);
     }
     $pdo->prepare('UPDATE usage_events SET consumed_seconds=?,trial_seconds=?,paid_seconds=? WHERE id=?')->execute([$consumed,$trialUsed,$paidUsed,$eventId]);
     $pdo->commit();
-    json_response(['ok'=>true,'consumed_seconds'=>$consumed,'remaining_seconds'=>$remaining,'stop'=>$stop]);
+    json_response(['ok'=>true,'consumed_seconds'=>$consumed,'consumed_credits'=>$consumedCredits,'remaining_seconds'=>$remaining,'remaining_credits'=>$remaining,'stop'=>$stop]);
 } catch (Throwable $error) {
     if ($pdo->inTransaction()) $pdo->rollBack();
     error_log('settlement failed session='.$sessionId.' error='.$error->getMessage());
