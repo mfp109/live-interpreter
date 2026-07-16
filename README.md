@@ -14,6 +14,21 @@ Live interpretation is often expensive or difficult to arrange for small teams, 
 
 This service keeps the experience voice-first: the speaker talks, the system interprets, and the audience listens.
 
+## Build Week scope and provenance
+
+This is a pre-existing production project that was meaningfully extended after the OpenAI Build Week submission period opened on July 13, 2026 at 9:00 AM PT (July 14 at 1:00 AM JST/KST). Judges should evaluate the Build Week additions listed below, not the earlier product as a whole.
+
+**Pre-Build Week baseline:** [`4620292`](https://github.com/mfp109/live-interpreter/commit/4620292), committed July 11, 2026.
+
+| Date (JST/KST) | Commit | Build Week addition |
+| --- | --- | --- |
+| July 15, 2026 03:20 | [`1d7cf42`](https://github.com/mfp109/live-interpreter/commit/1d7cf42) | GPT-5.6 interpretation preparation brief |
+| July 15, 2026 03:28 | [`202184d`](https://github.com/mfp109/live-interpreter/commit/202184d) | Public repository and evaluation documentation |
+| July 15, 2026 09:41 | [`68f1c79`](https://github.com/mfp109/live-interpreter/commit/68f1c79) | Terminology-aware realtime interpretation mode |
+| July 15, 2026 13:36 | [`156fffd`](https://github.com/mfp109/live-interpreter/commit/156fffd) | Explicit opt-in for custom terminology |
+| July 15, 2026 14:30 | [`8de52a1`](https://github.com/mfp109/live-interpreter/commit/8de52a1) | One-minute free trial and first-purchase offer |
+| July 15, 2026 14:36 | [`054d2fa`](https://github.com/mfp109/live-interpreter/commit/054d2fa) | Removal of the completed one-time migration endpoint |
+
 ## Build Week extension: AI Meeting Preparation Brief
 
 The Build Week work adds a new GPT-5.6-powered preparation workflow. Before a live session, a user enters:
@@ -30,7 +45,13 @@ GPT-5.6 returns a structured preparation brief containing:
 - speaking techniques that reduce ambiguity;
 - a pre-session checklist.
 
-This feature deliberately does **not** claim to modify the Realtime Translation model. It prepares the human speaker before the session while the live interpretation pipeline remains independent.
+This preparation feature deliberately does **not** claim to modify the Realtime Translation model. It prepares the human speaker before the session while the live interpretation pipeline remains independent.
+
+## Build Week extension: Explicit Custom Terminology
+
+The default live path uses `gpt-realtime-translate`, OpenAI's translation-specialized realtime model. This is the normal mode because it is optimized for low-latency speech-to-speech translation.
+
+When a user explicitly selects **Apply custom terminology**, the gateway switches that session to the general `gpt-realtime` model and supplies controlled instructions for names, specialist vocabulary, and abbreviations. The switch never happens silently: the interface identifies the model tradeoff and requires affirmative user action.
 
 ## How OpenAI is used
 
@@ -62,7 +83,9 @@ Codex was used as the primary engineering agent across the full delivery lifecyc
 - ConoHa WING and VPS deployment support;
 - Build Week feature design and implementation.
 
-The Build Week extension was designed after verifying an important product constraint: the current Realtime Translation model does not accept custom glossaries or prompts. Codex therefore separated GPT-5.6 preparation from the realtime audio path instead of presenting a misleading glossary-injection feature.
+Codex helped verify an important product constraint: the translation-specialized realtime model does not accept custom glossary instructions. That finding drove two truthful product decisions: keep GPT-5.6 preparation separate from the live audio path, and use the general realtime model only after explicit terminology opt-in.
+
+During Build Week, Codex accelerated the project by tracing the existing React/PHP/Node/SQL architecture, comparing model capabilities, implementing both gateway and UI changes, writing regression tests, reviewing security boundaries, preparing the public repository, and verifying the deployed service. The key human product decision was to preserve the translation-specialized model as the default instead of trading away its purpose without user consent.
 
 ## Architecture
 
@@ -86,7 +109,8 @@ Secrets never reach the browser. The OpenAI API key is stored only on the VPS ga
 - output-volume test and volume controls;
 - pause/resume without consuming purchased time;
 - warning after 9 minutes and automatic stop after 10 minutes without confirmation;
-- 15 free minutes for a newly verified account;
+- 1 free minute for a newly verified account;
+- a first-purchase-only offer of 30 minutes for ¥500;
 - prepaid interpretation credits with Stripe Checkout;
 - refunds that revoke the corresponding unused credit;
 - Japanese, English, and Simplified Chinese interface;
@@ -126,7 +150,7 @@ Copy `05_実装/web/api/config.sample.php` to `api/config.php` and replace every
 Apply the SQL migrations in filename order. The latest Build Week migration is:
 
 ```text
-05_実装/web/database/008_ai_preparation_usage.sql
+05_実装/web/database/009_trial_and_intro_offer.sql
 ```
 
 ### Gateway
@@ -156,6 +180,25 @@ npm test
 ```
 
 The gateway test suite covers access-token verification, HMAC request verification, GPT-5.6 request construction, non-storage configuration, Structured Output extraction, and Responses API integration boundaries.
+
+The final Build Week verification on July 16, 2026 passed the production web build, all 5 web tests, all 9 gateway tests, PHP syntax checks, and the PHP gateway-signature, refund-calculation, Stripe-signature, and TOTP tests.
+
+## Judge testing
+
+### Fast public demo
+
+1. Open [live-interpreter.shalomworks.tech](https://live-interpreter.shalomworks.tech/).
+2. Use the homepage audio demonstration to hear the Japanese-to-English interpretation flow without creating an account.
+
+### End-to-end live test
+
+1. Use the dedicated judge credentials supplied privately in the Devpost testing instructions. Credentials are intentionally not stored in this public repository.
+2. Allow microphone access, choose an input and output language, and use the microphone/output checks.
+3. Start interpretation and speak a short sentence.
+4. Optionally enter names or specialist terms and explicitly select **Apply custom terminology** to test the alternate model path.
+5. Generate an AI preparation brief to test the GPT-5.6 Structured Outputs workflow.
+
+A newly registered and verified account receives one free minute. The dedicated judge account should remain credited and available free of charge through the end of the judging period on August 5, 2026.
 
 ## Privacy and safety
 
