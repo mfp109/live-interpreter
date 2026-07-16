@@ -2,18 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   buildTranscriptionSession,
-  isCaptionMode,
   mapTranscriptionEvent,
 } from "../src/transcription.mjs";
-
-test("caption mode is limited to Japanese speech and Japanese captions", () => {
-  assert.equal(isCaptionMode({ mode: "caption", src: "ja", dst: "ja" }), true);
-  assert.equal(isCaptionMode({ mode: "caption", src: "en", dst: "en" }), false);
-  assert.equal(
-    isCaptionMode({ mode: "interpretation", src: "ja", dst: "ja" }),
-    false,
-  );
-});
 
 test("realtime whisper session uses Japanese low-latency transcription", () => {
   const session = buildTranscriptionSession();
@@ -32,7 +22,6 @@ test("transcription session uses the dedicated Realtime intent", async () => {
   const server = await import("node:fs/promises").then(({ readFile }) =>
     readFile(new URL("../src/server.mjs", import.meta.url), "utf8"),
   );
-  assert.match(server, /captionMode\s*\? "wss:\/\/api\.openai\.com\/v1\/realtime\?intent=transcription"/);
   assert.match(server, /realtime\?intent=transcription/);
   assert.doesNotMatch(server, /realtime\?model=gpt-realtime-whisper/);
 });

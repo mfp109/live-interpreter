@@ -1,191 +1,108 @@
-import { useEffect, useRef, useState } from "react";
-import {
-  Headphones,
-  Mic,
-  Pause,
-  Play,
-  Square,
-  Volume2,
-  VolumeX,
-} from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Headphones, Mic, Pause, Play, Square, Volume2, VolumeX } from "lucide-react";
 import { api, ApiError, formatCredits, Wallet } from "./api";
+import { Locale } from "./locales";
 
-type Locale = "ja" | "en" | "zh-CN";
-type InterpreterMode = "interpretation" | "caption";
-const ui = {
+type Mode = "both" | "audio" | "captions";
+type Status = "idle" | "connecting" | "live" | "paused" | "stopping";
+
+const languages = [
+  ["ja", "日本語"], ["en", "English"], ["zh", "中文"], ["ko", "한국어"],
+  ["es", "Español"], ["fr", "Français"], ["de", "Deutsch"], ["pt", "Português"],
+  ["it", "Italiano"], ["ru", "Русский"], ["ar", "العربية"], ["hi", "हिन्दी"],
+  ["id", "Bahasa Indonesia"], ["th", "ไทย"], ["vi", "Tiếng Việt"],
+] as const;
+
+const EN = {
+  title: "Live interpretation",
+  mode: "Mode",
+  both: "Audio + captions",
+  audio: "Audio only",
+  captions: "Captions only",
+  remain: "LI Credit balance",
+  used: "Used this session",
+  rate: "Credits per second",
+  input: "Input language",
+  output: "Interpretation language",
+  caption1: "Caption language 1",
+  caption2: "Caption language 2",
+  source: "Source language",
+  none: "None",
+  mic: "Input microphone",
+  defaultMic: "Default microphone",
+  enable: "Enable microphone",
+  test: "Test output volume",
+  mute: "Mute",
+  unmute: "Unmute",
+  start: "Start",
+  stop: "Stop",
+  pause: "Pause",
+  resume: "Resume",
+  idle: "○ Ready",
+  live: "● Live — keep speaking",
+  paused: "Ⅱ Paused — no credits are used",
+  connecting: "Connecting…",
+  stopping: "Stopping…",
+  headphones: "Headphones recommended",
+  same: "Choose different input and interpretation languages.",
+  captionRequired: "Choose at least one caption language.",
+  duplicateCaption: "Choose two different caption languages.",
+  empty: "No credits remain.",
+  closed: "The connection ended.",
+  reconnecting: "Connection lost. Reconnecting…",
+  captionWaiting: "Captions will appear here when you speak.",
+  continueTitle: "Continue interpreting?",
+  continueText: "The session will stop automatically if there is no response.",
+  continueButton: "Continue",
+  endButton: "Stop now",
+  autoStop: "The session stopped automatically after 10 minutes.",
+};
+
+type Strings = typeof EN;
+const overrides: Partial<Record<Locale, Partial<Strings>>> = {
   ja: {
-    title: "リアルタイム音声通訳",
-    captionTitle: "日本語リアルタイム字幕",
-    interpretationMode: "音声通訳",
-    captionMode: "日本語字幕",
-    captionPair: "日本語音声 → 日本語字幕",
-    captionHelp: "話した日本語を、音声を出さずにリアルタイムで字幕表示します。",
-    captionWaiting: "マイクに向かって話すと、ここに字幕が表示されます。",
-    remain: "LIクレジット残高",
-    input: "入力言語",
-    output: "出力言語",
-    mic: "入力マイク",
-    enable: "マイクを有効化",
-    test: "出力音量テスト",
-    mute: "ミュート",
-    unmute: "ミュート解除",
-    start: "通訳を開始",
-    startCaption: "字幕を開始",
-    stop: "通訳を終了",
-    pause: "一時停止",
-    resume: "再開",
-    stopping: "終了処理中…",
-    idle: "○ 待機中",
-    live: "● 通訳中 — 話し続けてください",
-    captionLive: "● 字幕表示中 — 話し続けてください",
-    paused: "Ⅱ 一時停止中 — 時間は消費されません",
-    headphones: "イヤホン推奨",
-    same: "入力言語と出力言語を別にしてください。",
-    empty: "通訳時間がありません。",
-    closed: "通訳接続が終了しました。",
-    reconnecting: "接続が切れました。再接続しています…",
-    used: "今回の消費",
-    continueTitle: "通訳を続けますか？",
-    continueText: "まもなく10分です。操作がなければ自動的に通訳を終了します。",
-    continueButton: "通訳を続ける",
-    endButton: "今すぐ終了",
-    autoStop: "安全のため、10分で通訳を自動終了しました。",
-    secondsLeft: "自動終了まで",
-    glossary: "固有名詞・専門用語（任意）",
-    glossaryHelp:
-      "1行に1つ「話す言葉 = 通訳後の言葉」で入力します。入力しただけでは適用されません。",
-    glossaryExample: "例：御言葉 = the Word of God\nShalomWorks = ShalomWorks",
-    glossaryInvalid:
-      "各行を「話す言葉 = 通訳後の言葉」の形で入力してください（最大20件）。",
-    glossaryActive: "カスタム用語を適用中（通常Realtimeモデル）",
-    glossaryEnable: "カスタム用語を適用",
-    glossaryDisable: "カスタム用語の適用を解除",
-    glossaryRequired: "カスタム用語を1件以上、正しい形式で入力してください。",
-  },
-  en: {
-    title: "Live voice interpretation",
-    captionTitle: "Live Japanese captions",
-    interpretationMode: "Voice interpretation",
-    captionMode: "Japanese captions",
-    captionPair: "Japanese speech → Japanese captions",
-    captionHelp:
-      "Shows live Japanese captions without generating spoken audio.",
-    captionWaiting: "Speak into the microphone to show captions here.",
-    remain: "LI Credit balance",
-    input: "Input language",
-    output: "Output language",
-    mic: "Input microphone",
-    enable: "Enable microphone",
-    test: "Test output volume",
-    mute: "Mute",
-    unmute: "Unmute",
-    start: "Start interpreting",
-    startCaption: "Start captions",
-    stop: "Stop interpreting",
-    pause: "Pause",
-    resume: "Resume",
-    stopping: "Stopping…",
-    idle: "○ Ready",
-    live: "● Live — keep speaking",
-    captionLive: "● Captions live — keep speaking",
-    paused: "Ⅱ Paused — no time is being used",
-    headphones: "Headphones recommended",
-    same: "Choose different input and output languages.",
-    empty: "No interpretation time remains.",
-    closed: "The interpretation connection ended.",
-    reconnecting: "Connection lost. Reconnecting…",
-    used: "Used this session",
-    continueTitle: "Continue interpreting?",
-    continueText:
-      "You are approaching 10 minutes. Interpretation will stop automatically if there is no response.",
-    continueButton: "Continue interpreting",
-    endButton: "Stop now",
-    autoStop:
-      "Interpretation stopped automatically after 10 minutes for safety.",
-    secondsLeft: "Automatic stop in",
-    glossary: "Names and terminology (optional)",
-    glossaryHelp:
-      "Enter one pair per line as “spoken term = interpreted term”. Terms are not applied until you enable them.",
-    glossaryExample:
-      "Example: 御言葉 = the Word of God\nShalomWorks = ShalomWorks",
-    glossaryInvalid:
-      "Use “spoken term = interpreted term” on each line (maximum 20).",
-    glossaryActive: "Custom terms active (standard Realtime model)",
-    glossaryEnable: "Apply custom terms",
-    glossaryDisable: "Stop applying custom terms",
-    glossaryRequired: "Enter at least one valid custom term.",
+    title: "リアルタイム通訳", mode: "利用方法", both: "音声＋字幕", audio: "音声のみ", captions: "字幕のみ",
+    remain: "LIクレジット残高", used: "今回の消費", rate: "1秒あたりのクレジット", input: "入力言語", output: "通訳言語",
+    caption1: "字幕言語 1", caption2: "字幕言語 2", source: "原語", none: "なし", mic: "入力マイク", defaultMic: "標準マイク",
+    enable: "マイクを有効化", test: "出力音量テスト", mute: "ミュート", unmute: "ミュート解除", start: "開始", stop: "終了",
+    pause: "一時停止", resume: "再開", idle: "○ 待機中", live: "● 実行中 — 話し続けてください", paused: "Ⅱ 一時停止中 — クレジットは減りません",
+    connecting: "接続中…", stopping: "終了処理中…", headphones: "イヤホン推奨", same: "入力言語と通訳言語を別にしてください。",
+    captionRequired: "字幕言語を1つ以上選んでください。", duplicateCaption: "字幕言語1・2は別の言語を選んでください。", empty: "クレジット残高がありません。",
+    closed: "接続が終了しました。", reconnecting: "接続が切れました。再接続しています…", captionWaiting: "話すとここに字幕が表示されます。",
+    continueTitle: "続けますか？", continueText: "操作がなければ自動的に終了します。", continueButton: "続ける", endButton: "今すぐ終了", autoStop: "安全のため10分で自動終了しました。",
   },
   "zh-CN": {
-    title: "实时语音口译",
-    captionTitle: "实时日语字幕",
-    interpretationMode: "语音口译",
-    captionMode: "日语字幕",
-    captionPair: "日语语音 → 日语字幕",
-    captionHelp: "不生成语音，仅将日语讲话实时显示为字幕。",
-    captionWaiting: "请对着麦克风讲话，字幕会显示在这里。",
-    remain: "LI积分余额",
-    input: "输入语言",
-    output: "输出语言",
-    mic: "输入麦克风",
-    enable: "启用麦克风",
-    test: "测试输出音量",
-    mute: "静音",
-    unmute: "取消静音",
-    start: "开始口译",
-    startCaption: "开始字幕",
-    stop: "结束口译",
-    pause: "暂停",
-    resume: "继续",
-    stopping: "正在结束…",
-    idle: "○ 待机",
-    live: "● 口译中 — 请继续说话",
-    captionLive: "● 字幕显示中 — 请继续说话",
-    paused: "Ⅱ 已暂停 — 不会扣除时间",
-    headphones: "建议使用耳机",
-    same: "请选择不同的输入和输出语言。",
-    empty: "没有剩余口译时间。",
-    closed: "口译连接已结束。",
-    reconnecting: "连接中断，正在重新连接…",
-    used: "本次消耗",
-    continueTitle: "要继续口译吗？",
-    continueText: "即将达到10分钟。如无操作，口译将自动结束。",
-    continueButton: "继续口译",
-    endButton: "立即结束",
-    autoStop: "为防止忘记关闭，口译已在10分钟时自动结束。",
-    secondsLeft: "自动结束还剩",
-    glossary: "专有名词和术语（可选）",
-    glossaryHelp: "每行输入一组“讲话用词 = 口译用词”。仅填写不会自动启用。",
-    glossaryExample: "例：御言葉 = the Word of God\nShalomWorks = ShalomWorks",
-    glossaryInvalid:
-      "请按“讲话用词 = 口译用词”格式填写，每行一组（最多20组）。",
-    glossaryActive: "正在应用自定义术语（标准 Realtime 模型）",
-    glossaryEnable: "应用自定义术语",
-    glossaryDisable: "停止应用自定义术语",
-    glossaryRequired: "请至少输入一组格式正确的自定义术语。",
+    title: "实时口译", mode: "使用方式", both: "语音＋字幕", audio: "仅语音", captions: "仅字幕", remain: "LI积分余额", used: "本次消耗", rate: "每秒积分",
+    input: "输入语言", output: "口译语言", caption1: "字幕语言1", caption2: "字幕语言2", source: "原语言", none: "无", mic: "输入麦克风", defaultMic: "默认麦克风",
+    enable: "启用麦克风", test: "测试音量", mute: "静音", unmute: "取消静音", start: "开始", stop: "结束", pause: "暂停", resume: "继续", idle: "○ 待机",
+    live: "● 进行中 — 请继续说话", paused: "Ⅱ 已暂停 — 不扣积分", connecting: "连接中…", stopping: "正在结束…", headphones: "建议使用耳机",
+    same: "请选择不同的输入和口译语言。", captionRequired: "请至少选择一种字幕语言。", duplicateCaption: "请选择两种不同的字幕语言。", empty: "积分余额不足。",
+    closed: "连接已结束。", reconnecting: "连接中断，正在重新连接…", captionWaiting: "说话后字幕会显示在这里。", continueTitle: "继续吗？", continueText: "如无操作将自动结束。",
+    continueButton: "继续", endButton: "立即结束", autoStop: "已在10分钟后自动结束。",
   },
-} as const;
-const languages = [
-  ["ja", "日本語"],
-  ["en", "English"],
-  ["zh", "中文"],
-  ["ko", "한국어"],
-  ["es", "Español"],
-  ["fr", "Français"],
-  ["de", "Deutsch"],
-  ["pt", "Português"],
-  ["it", "Italiano"],
-  ["ru", "Русский"],
-  ["ar", "العربية"],
-  ["hi", "हिन्दी"],
-  ["th", "ไทย"],
-  ["vi", "Tiếng Việt"],
-];
+  es: { title: "Interpretación en tiempo real", mode: "Modo", both: "Audio + subtítulos", audio: "Solo audio", captions: "Solo subtítulos", input: "Idioma de entrada", output: "Idioma de interpretación", caption1: "Idioma de subtítulos 1", caption2: "Idioma de subtítulos 2", source: "Idioma original", none: "Ninguno", start: "Iniciar", stop: "Finalizar", pause: "Pausa", resume: "Reanudar", remain: "Saldo de créditos LI" },
+  pt: { title: "Interpretação em tempo real", mode: "Modo", both: "Áudio + legendas", audio: "Somente áudio", captions: "Somente legendas", input: "Idioma de entrada", output: "Idioma da interpretação", caption1: "Idioma da legenda 1", caption2: "Idioma da legenda 2", source: "Idioma original", none: "Nenhum", start: "Iniciar", stop: "Encerrar", pause: "Pausar", resume: "Retomar", remain: "Saldo de créditos LI" },
+  fr: { title: "Interprétation en temps réel", mode: "Mode", both: "Audio + sous-titres", audio: "Audio uniquement", captions: "Sous-titres uniquement", input: "Langue d’entrée", output: "Langue d’interprétation", caption1: "Langue des sous-titres 1", caption2: "Langue des sous-titres 2", source: "Langue source", none: "Aucun", start: "Démarrer", stop: "Arrêter", pause: "Pause", resume: "Reprendre", remain: "Solde de crédits LI" },
+  de: { title: "Live-Dolmetschen", mode: "Modus", both: "Audio + Untertitel", audio: "Nur Audio", captions: "Nur Untertitel", input: "Eingabesprache", output: "Dolmetschsprache", caption1: "Untertitelsprache 1", caption2: "Untertitelsprache 2", source: "Originalsprache", none: "Keine", start: "Starten", stop: "Beenden", pause: "Pause", resume: "Fortsetzen", remain: "LI-Guthaben" },
+  ru: { title: "Синхронный перевод", mode: "Режим", both: "Звук + субтитры", audio: "Только звук", captions: "Только субтитры", input: "Язык ввода", output: "Язык перевода", caption1: "Язык субтитров 1", caption2: "Язык субтитров 2", source: "Исходный язык", none: "Нет", start: "Начать", stop: "Остановить", pause: "Пауза", resume: "Продолжить", remain: "Баланс LI-кредитов" },
+  ko: { title: "실시간 통역", mode: "사용 방식", both: "음성 + 자막", audio: "음성만", captions: "자막만", input: "입력 언어", output: "통역 언어", caption1: "자막 언어 1", caption2: "자막 언어 2", source: "원어", none: "없음", start: "시작", stop: "종료", pause: "일시정지", resume: "재개", remain: "LI 크레딧 잔액" },
+  hi: { title: "लाइव दुभाषिया", mode: "मोड", both: "ऑडियो + उपशीर्षक", audio: "केवल ऑडियो", captions: "केवल उपशीर्षक", input: "इनपुट भाषा", output: "अनुवाद भाषा", caption1: "उपशीर्षक भाषा 1", caption2: "उपशीर्षक भाषा 2", source: "मूल भाषा", none: "कोई नहीं", start: "शुरू करें", stop: "समाप्त", pause: "रोकें", resume: "जारी रखें", remain: "LI क्रेडिट शेष" },
+  id: { title: "Interpretasi langsung", mode: "Mode", both: "Audio + teks", audio: "Audio saja", captions: "Teks saja", input: "Bahasa masukan", output: "Bahasa interpretasi", caption1: "Bahasa teks 1", caption2: "Bahasa teks 2", source: "Bahasa sumber", none: "Tidak ada", start: "Mulai", stop: "Selesai", pause: "Jeda", resume: "Lanjutkan", remain: "Saldo kredit LI" },
+  vi: { title: "Phiên dịch trực tiếp", mode: "Chế độ", both: "Âm thanh + phụ đề", audio: "Chỉ âm thanh", captions: "Chỉ phụ đề", input: "Ngôn ngữ đầu vào", output: "Ngôn ngữ phiên dịch", caption1: "Ngôn ngữ phụ đề 1", caption2: "Ngôn ngữ phụ đề 2", source: "Ngôn ngữ gốc", none: "Không", start: "Bắt đầu", stop: "Kết thúc", pause: "Tạm dừng", resume: "Tiếp tục", remain: "Số dư tín dụng LI" },
+  it: { title: "Interpretazione in tempo reale", mode: "Modalità", both: "Audio + sottotitoli", audio: "Solo audio", captions: "Solo sottotitoli", input: "Lingua di input", output: "Lingua di interpretazione", caption1: "Lingua sottotitoli 1", caption2: "Lingua sottotitoli 2", source: "Lingua originale", none: "Nessuno", start: "Avvia", stop: "Termina", pause: "Pausa", resume: "Riprendi", remain: "Saldo crediti LI" },
+};
+
+function strings(locale: Locale): Strings {
+  return { ...EN, ...(overrides[locale] || {}) };
+}
+
 function toBase64(bytes: Uint8Array) {
   let value = "";
   for (let i = 0; i < bytes.length; i += 8192)
     value += String.fromCharCode(...bytes.subarray(i, i + 8192));
   return btoa(value);
 }
+
 function encodePcm16(samples: Float32Array, inputRate: number) {
   const ratio = inputRate / 24000;
   const output = new Int16Array(Math.floor(samples.length / ratio));
@@ -196,29 +113,9 @@ function encodePcm16(samples: Float32Array, inputRate: number) {
   return toBase64(new Uint8Array(output.buffer));
 }
 
-type GlossaryEntry = { source: string; translation: string };
-function parseGlossary(value: string): GlossaryEntry[] | null {
-  const lines = value
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-  if (lines.length > 20) return null;
-  const entries: GlossaryEntry[] = [];
-  for (const line of lines) {
-    const match = line.match(/^(.+?)\s*(?:=|→|->|\t)\s*(.+)$/);
-    if (!match) return null;
-    const source = match[1].trim();
-    const translation = match[2].trim();
-    if (
-      !source ||
-      !translation ||
-      source.length > 80 ||
-      translation.length > 80
-    )
-      return null;
-    entries.push({ source, translation });
-  }
-  return entries;
+function appendCaption(current: string, delta: string) {
+  const next = `${current}${delta}`;
+  return next.length > 2200 ? next.slice(-2000).replace(/^\S*\s?/, "") : next;
 }
 
 export function Interpreter({
@@ -226,44 +123,30 @@ export function Interpreter({
   csrf,
   onBalance,
   locale,
-  terminologyPreset,
 }: {
   wallet: Wallet;
   csrf: string;
-  onBalance: (seconds: number) => void;
+  onBalance: (credits: number) => void;
   locale: Locale;
-  terminologyPreset: {
-    source: string;
-    target: string;
-    terms: GlossaryEntry[];
-  } | null;
 }) {
-  const t = ui[locale];
-  const [mode, setMode] = useState<InterpreterMode>("interpretation");
+  const t = strings(locale);
+  const [mode, setMode] = useState<Mode>("both");
   const [source, setSource] = useState("ja");
   const [target, setTarget] = useState("en");
-  const [status, setStatus] = useState<
-    "idle" | "connecting" | "live" | "paused" | "stopping"
-  >("idle");
+  const [caption1, setCaption1] = useState("source");
+  const [caption2, setCaption2] = useState("en");
+  const [status, setStatus] = useState<Status>("idle");
   const [level, setLevel] = useState(0);
-  const [remaining, setRemaining] = useState(
-    Number(wallet.trial_seconds) + Number(wallet.paid_seconds),
-  );
+  const [remaining, setRemaining] = useState(Number(wallet.trial_seconds) + Number(wallet.paid_seconds));
   const [volume, setVolume] = useState(0.85);
   const [muted, setMuted] = useState(false);
   const [message, setMessage] = useState("");
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [deviceId, setDeviceId] = useState("");
   const [elapsed, setElapsed] = useState(0);
+  const [activeRate, setActiveRate] = useState(0);
+  const [captionText, setCaptionText] = useState<Record<string, string>>({});
   const [continuePrompt, setContinuePrompt] = useState(false);
-  const [glossaryText, setGlossaryText] = useState("");
-  const [useTerminologyMode, setUseTerminologyMode] = useState(false);
-  const [captionLines, setCaptionLines] = useState<
-    { itemId: string; text: string; order: number }[]
-  >([]);
-  const [captionDrafts, setCaptionDrafts] = useState<Record<string, string>>(
-    {},
-  );
   const stream = useRef<MediaStream | null>(null);
   const context = useRef<AudioContext | null>(null);
   const processor = useRef<ScriptProcessorNode | null>(null);
@@ -273,63 +156,37 @@ export function Interpreter({
   const volumeRef = useRef(volume);
   const mutedRef = useRef(muted);
   const timer = useRef<number | null>(null);
+  const reconnectTimer = useRef<number | null>(null);
   const userStopped = useRef(false);
   const pausedRef = useRef(false);
   const reconnectCount = useRef(0);
   const remainingRef = useRef(remaining);
-  const reconnectTimer = useRef<number | null>(null);
-  const autoPrepareStarted = useRef(false);
-  const captionOrder = useRef(new Map<string, number>());
-  const captionNextOrder = useRef(0);
   const elapsedRef = useRef(0);
+  const activeRateRef = useRef(0);
   const warningAt = useRef(9 * 60);
   const stopAt = useRef(10 * 60);
-  useEffect(() => {
-    setRemaining(Number(wallet.trial_seconds) + Number(wallet.paid_seconds));
-  }, [wallet]);
-  useEffect(() => {
-    remainingRef.current = remaining;
-  }, [remaining]);
-  useEffect(() => {
-    volumeRef.current = volume;
-  }, [volume]);
-  useEffect(() => {
-    mutedRef.current = muted;
-  }, [muted]);
-  useEffect(() => {
-    elapsedRef.current = elapsed;
-  }, [elapsed]);
-  useEffect(() => {
-    if (!terminologyPreset) return;
-    if (mode === "caption") return;
-    setSource(terminologyPreset.source);
-    setTarget(terminologyPreset.target);
-    setGlossaryText(
-      terminologyPreset.terms
-        .slice(0, 20)
-        .map((entry) => `${entry.source} = ${entry.translation}`)
-        .join("\n"),
-    );
-  }, [terminologyPreset, mode]);
-  useEffect(() => {
-    if (mode !== "caption") return;
-    setSource("ja");
-    setTarget("ja");
-    setUseTerminologyMode(false);
-  }, [mode]);
-  useEffect(() => {
-    if (autoPrepareStarted.current) return;
-    autoPrepareStarted.current = true;
-    navigator.permissions
-      ?.query({ name: "microphone" as PermissionName })
-      .then((permission) => {
-        if (permission.state === "granted") return prepare();
-      })
-      .catch(() => {
-        // Permission API support varies; the explicit enable button remains available.
-      });
-  }, []);
+
+  const captionLanguages = useMemo(
+    () => (mode === "audio" ? [] : [caption1, caption2].filter((value) => value !== "none")),
+    [mode, caption1, caption2],
+  );
+  const plannedRate = useMemo(() => {
+    const translations = new Set<string>();
+    if (mode !== "captions") translations.add(target);
+    for (const language of captionLanguages)
+      if (language !== "source" && language !== source) translations.add(language);
+    const sourceCaptions = captionLanguages.some((language) => language === "source" || language === source);
+    return translations.size * 12 + (sourceCaptions ? 1 : 0);
+  }, [mode, target, source, captionLanguages]);
+
+  useEffect(() => setRemaining(Number(wallet.trial_seconds) + Number(wallet.paid_seconds)), [wallet]);
+  useEffect(() => { remainingRef.current = remaining; }, [remaining]);
+  useEffect(() => { volumeRef.current = volume; }, [volume]);
+  useEffect(() => { mutedRef.current = muted; }, [muted]);
+  useEffect(() => { elapsedRef.current = elapsed; }, [elapsed]);
+  useEffect(() => { activeRateRef.current = activeRate; }, [activeRate]);
   useEffect(() => () => shutdown(), []);
+
   async function prepare(force = false, selectedDevice = deviceId) {
     if (stream.current && !force) return;
     if (force) shutdownMedia();
@@ -342,12 +199,9 @@ export function Interpreter({
       },
     });
     stream.current = media;
-    const list = (await navigator.mediaDevices.enumerateDevices()).filter(
-      (d) => d.kind === "audioinput",
-    );
+    const list = (await navigator.mediaDevices.enumerateDevices()).filter((item) => item.kind === "audioinput");
     setDevices(list);
-    if (!deviceId && media.getAudioTracks()[0]?.getSettings().deviceId)
-      setDeviceId(media.getAudioTracks()[0].getSettings().deviceId || "");
+    if (!deviceId) setDeviceId(media.getAudioTracks()[0]?.getSettings().deviceId || "");
     const ctx = new AudioContext();
     context.current = ctx;
     playCursor.current = ctx.currentTime;
@@ -358,25 +212,19 @@ export function Interpreter({
     const values = new Uint8Array(analyser.frequencyBinCount);
     const draw = () => {
       analyser.getByteFrequencyData(values);
-      setLevel(
-        Math.min(
-          100,
-          Math.round(values.reduce((a, b) => a + b, 0) / values.length / 1.25),
-        ),
-      );
+      setLevel(Math.min(100, Math.round(values.reduce((a, b) => a + b, 0) / values.length / 1.25)));
       analyserFrame.current = requestAnimationFrame(draw);
     };
     draw();
   }
-  function play(delta: string) {
+
+  function playAudio(delta: string) {
     const ctx = context.current;
     if (!ctx) return;
     const raw = atob(delta);
     const input = new Int16Array(raw.length / 2);
     for (let i = 0; i < input.length; i++)
-      input[i] =
-        ((raw.charCodeAt(i * 2) | (raw.charCodeAt(i * 2 + 1) << 8)) << 16) >>
-        16;
+      input[i] = ((raw.charCodeAt(i * 2) | (raw.charCodeAt(i * 2 + 1) << 8)) << 16) >> 16;
     const buffer = ctx.createBuffer(1, input.length, 24000);
     const channel = buffer.getChannelData(0);
     for (let i = 0; i < input.length; i++) channel[i] = input[i] / 32768;
@@ -389,204 +237,118 @@ export function Interpreter({
     node.start(playCursor.current);
     playCursor.current += buffer.duration;
   }
+
+  function validationError() {
+    if (mode !== "captions" && source === target) return t.same;
+    if (mode !== "audio" && captionLanguages.length === 0) return t.captionRequired;
+    if (caption1 !== "none" && caption1 === caption2) return t.duplicateCaption;
+    return "";
+  }
+
   async function start() {
     setMessage("");
-    userStopped.current = false;
-    if (mode === "interpretation" && source === target) {
-      setMessage(t.same);
-      return;
-    }
-    if (remaining <= 0) {
-      setMessage(t.empty);
-      return;
-    }
-    const parsedGlossary =
-      mode === "caption" ? [] : parseGlossary(glossaryText);
-    if (useTerminologyMode && parsedGlossary === null) {
-      setMessage(t.glossaryInvalid);
-      return;
-    }
-    if (useTerminologyMode && parsedGlossary?.length === 0) {
-      setMessage(t.glossaryRequired);
-      return;
-    }
-    const glossary = useTerminologyMode ? parsedGlossary || [] : [];
+    const error = validationError();
+    if (error) return setMessage(error);
+    if (remaining < plannedRate) return setMessage(t.empty);
     try {
       await prepare();
+      userStopped.current = false;
       reconnectCount.current = 0;
-      if (mode === "caption") {
-        setCaptionLines([]);
-        setCaptionDrafts({});
-        captionOrder.current.clear();
-        captionNextOrder.current = 0;
-      }
+      setCaptionText({});
       setElapsed(0);
       elapsedRef.current = 0;
       warningAt.current = 9 * 60;
       stopAt.current = 10 * 60;
       setContinuePrompt(false);
       setStatus("connecting");
-      await connect(glossary);
-    } catch (error) {
+      await connect();
+    } catch (errorValue) {
       finishSession();
-      setMessage(
-        error instanceof ApiError && error.code === "BALANCE_EMPTY"
-          ? t.empty
-          : error instanceof Error
-            ? error.message
-            : t.closed,
-      );
+      setMessage(errorValue instanceof ApiError && errorValue.code === "BALANCE_EMPTY" ? t.empty : errorValue instanceof Error ? errorValue.message : t.closed);
     }
   }
-  async function connect(glossary = parseGlossary(glossaryText) || []) {
-    const authorization = await api<{
-      gateway_url: string;
-      access_token: string;
-    }>(
+
+  async function connect() {
+    const authorization = await api<{ gateway_url: string; access_token: string; credits_per_second: number }>(
       "interpreter/authorize.php",
       {
         method: "POST",
         body: JSON.stringify({
-          source_language: mode === "caption" ? "ja" : source,
-          target_language: mode === "caption" ? "ja" : target,
+          source_language: source,
+          target_language: mode === "captions" ? null : target,
+          caption_languages: captionLanguages,
           mode,
-          glossary,
-          use_terminology_mode: useTerminologyMode,
         }),
       },
       csrf,
     );
-    const ws = new WebSocket(
-      authorization.gateway_url.replace(/^http/, "ws") + "/translate",
-    );
+    setActiveRate(authorization.credits_per_second);
+    activeRateRef.current = authorization.credits_per_second;
+    const ws = new WebSocket(authorization.gateway_url.replace(/^http/, "ws") + "/translate");
     socket.current = ws;
-    ws.onopen = () =>
-      ws.send(
-        JSON.stringify({
-          type: "authenticate",
-          access_token: authorization.access_token,
-        }),
-      );
+    ws.onopen = () => ws.send(JSON.stringify({ type: "authenticate", access_token: authorization.access_token }));
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.type === "ready") {
+        const rate = Number(data.credits_per_second) || authorization.credits_per_second;
+        setActiveRate(rate);
+        activeRateRef.current = rate;
         setStatus("live");
         setMessage("");
         if (timer.current !== null) clearInterval(timer.current);
         timer.current = window.setInterval(() => {
-          if (!pausedRef.current) {
-            const next = elapsedRef.current + 1;
-            elapsedRef.current = next;
-            setElapsed(next);
-            const rate = mode === "caption" ? 1 : 12;
-            setRemaining((credits) => Math.max(0, credits - rate));
-            if (next === warningAt.current) setContinuePrompt(true);
-            if (next >= stopAt.current) {
-              setContinuePrompt(false);
-              setMessage(t.autoStop);
-              stop();
-            }
+          if (pausedRef.current) return;
+          const next = elapsedRef.current + 1;
+          elapsedRef.current = next;
+          setElapsed(next);
+          setRemaining((credits) => Math.max(0, credits - activeRateRef.current));
+          if (next === warningAt.current) setContinuePrompt(true);
+          if (next >= stopAt.current) {
+            setContinuePrompt(false);
+            setMessage(t.autoStop);
+            stop();
           }
         }, 1000);
         const ctx = context.current!;
         const src = ctx.createMediaStreamSource(stream.current!);
         const proc = ctx.createScriptProcessor(4096, 1, 1);
         processor.current = proc;
-        proc.onaudioprocess = (e) => {
+        proc.onaudioprocess = (audioEvent) => {
           if (ws.readyState === WebSocket.OPEN && !pausedRef.current)
-            ws.send(
-              JSON.stringify({
-                type: "audio",
-                audio: encodePcm16(
-                  e.inputBuffer.getChannelData(0),
-                  ctx.sampleRate,
-                ),
-              }),
-            );
+            ws.send(JSON.stringify({ type: "audio", audio: encodePcm16(audioEvent.inputBuffer.getChannelData(0), ctx.sampleRate) }));
         };
         src.connect(proc);
         proc.connect(ctx.destination);
       }
-      if (data.type === "audio") play(data.delta);
-      if (data.type === "caption_delta" && data.item_id && data.delta) {
-        if (!captionOrder.current.has(data.item_id)) {
-          captionOrder.current.set(data.item_id, captionNextOrder.current++);
-        }
-        setCaptionDrafts((drafts) => ({
-          ...drafts,
-          [data.item_id]: `${drafts[data.item_id] || ""}${data.delta}`,
-        }));
-      }
-      if (data.type === "caption_completed" && data.item_id) {
-        const transcript = String(data.transcript || "").trim();
-        setCaptionDrafts((drafts) => {
-          const next = { ...drafts };
-          delete next[data.item_id];
-          return next;
+      if (data.type === "audio") playAudio(data.delta);
+      if (data.type === "caption_delta" && data.caption_key && data.delta)
+        setCaptionText((current) => ({ ...current, [data.caption_key]: appendCaption(current[data.caption_key] || "", String(data.delta)) }));
+      if (data.type === "caption_completed" && data.caption_key && data.transcript)
+        setCaptionText((current) => {
+          const existing = current[data.caption_key] || "";
+          const transcript = String(data.transcript).trim();
+          return existing.endsWith(transcript) ? current : { ...current, [data.caption_key]: appendCaption(existing, `${transcript} `) };
         });
-        if (transcript) {
-          if (!captionOrder.current.has(data.item_id)) {
-            captionOrder.current.set(data.item_id, captionNextOrder.current++);
-          }
-          const order = captionOrder.current.get(data.item_id) || 0;
-          setCaptionLines((lines) =>
-            [
-              ...lines.filter((line) => line.itemId !== data.item_id),
-              { itemId: data.item_id, text: transcript, order },
-            ]
-              .sort((a, b) => a.order - b.order)
-              .slice(-6),
-          );
-        }
-      }
-      if (data.type === "paused") {
-        pausedRef.current = true;
-        setStatus("paused");
-      }
-      if (data.type === "resumed") {
-        pausedRef.current = false;
-        setStatus("live");
-      }
-      if (data.type === "billing") {
-        setRemaining(data.remaining_seconds);
-        onBalance(data.remaining_seconds);
-      }
+      if (data.type === "paused") { pausedRef.current = true; setStatus("paused"); }
+      if (data.type === "resumed") { pausedRef.current = false; setStatus("live"); }
+      if (data.type === "billing") { setRemaining(data.remaining_seconds); onBalance(data.remaining_seconds); }
     };
     ws.onclose = (event) => {
       detachConnection();
-      if (event.reason === "balance_exhausted") {
-        finishSession();
-        setMessage(t.empty);
-      } else if (
-        !userStopped.current &&
-        event.code !== 1000 &&
-        remainingRef.current > 0
-      )
-        retryConnection(800);
-      else {
-        finishSession();
-        if (!userStopped.current && event.code !== 1000) setMessage(t.closed);
-      }
+      if (event.reason === "balance_exhausted") { finishSession(); setMessage(t.empty); }
+      else if (!userStopped.current && event.code !== 1000 && remainingRef.current > activeRateRef.current) retryConnection(800);
+      else { finishSession(); if (!userStopped.current && event.code !== 1000) setMessage(t.closed); }
     };
   }
+
   function retryConnection(delay: number) {
-    if (userStopped.current || reconnectCount.current >= 2) {
-      finishSession();
-      if (!userStopped.current) setMessage(t.closed);
-      return;
-    }
+    if (userStopped.current || reconnectCount.current >= 2) { finishSession(); if (!userStopped.current) setMessage(t.closed); return; }
     reconnectCount.current += 1;
     setStatus("connecting");
     setMessage(t.reconnecting);
-    reconnectTimer.current = window.setTimeout(async () => {
-      if (userStopped.current) return;
-      try {
-        await connect();
-      } catch {
-        retryConnection(1200);
-      }
-    }, delay);
+    reconnectTimer.current = window.setTimeout(() => connect().catch(() => retryConnection(1200)), delay);
   }
+
   function detachConnection() {
     processor.current?.disconnect();
     processor.current = null;
@@ -594,12 +356,7 @@ export function Interpreter({
     timer.current = null;
     socket.current = null;
   }
-  function finishSession() {
-    pausedRef.current = false;
-    setContinuePrompt(false);
-    setStatus("idle");
-    detachConnection();
-  }
+  function finishSession() { pausedRef.current = false; setContinuePrompt(false); setStatus("idle"); detachConnection(); }
   function stop() {
     userStopped.current = true;
     setContinuePrompt(false);
@@ -607,308 +364,72 @@ export function Interpreter({
     timer.current = null;
     if (reconnectTimer.current !== null) clearTimeout(reconnectTimer.current);
     reconnectTimer.current = null;
-    if (socket.current?.readyState === WebSocket.OPEN) {
-      socket.current.send(JSON.stringify({ type: "stop" }));
-      setStatus("stopping");
-    } else {
-      socket.current?.close();
-      finishSession();
-    }
+    if (socket.current?.readyState === WebSocket.OPEN) { socket.current.send(JSON.stringify({ type: "stop" })); setStatus("stopping"); }
+    else { socket.current?.close(); finishSession(); }
   }
-  function togglePause() {
-    const ws = socket.current;
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    ws.send(JSON.stringify({ type: status === "paused" ? "resume" : "pause" }));
-  }
-  function continueInterpretation() {
-    warningAt.current = elapsedRef.current + 9 * 60;
-    stopAt.current = elapsedRef.current + 10 * 60;
-    setContinuePrompt(false);
-  }
+  function togglePause() { socket.current?.send(JSON.stringify({ type: status === "paused" ? "resume" : "pause" })); }
+  function continueInterpretation() { warningAt.current = elapsedRef.current + 9 * 60; stopAt.current = elapsedRef.current + 10 * 60; setContinuePrompt(false); }
   function shutdownMedia() {
-    if (analyserFrame.current !== null)
-      cancelAnimationFrame(analyserFrame.current);
+    if (analyserFrame.current !== null) cancelAnimationFrame(analyserFrame.current);
     stream.current?.getTracks().forEach((track) => track.stop());
     context.current?.close();
-    stream.current = null;
-    context.current = null;
-    analyserFrame.current = null;
-    setLevel(0);
+    stream.current = null; context.current = null; analyserFrame.current = null; setLevel(0);
   }
   function shutdown() {
     userStopped.current = true;
     if (reconnectTimer.current !== null) clearTimeout(reconnectTimer.current);
-    socket.current?.close();
-    processor.current?.disconnect();
+    socket.current?.close(); processor.current?.disconnect();
     if (timer.current !== null) clearInterval(timer.current);
     shutdownMedia();
   }
   async function testSound() {
     await prepare();
     const ctx = context.current!;
-    const response = await fetch("/audio/output-test.mp3", {
-      cache: "force-cache",
-    });
+    const response = await fetch("/audio/output-test.mp3", { cache: "force-cache" });
     if (!response.ok) throw new Error(t.closed);
     const buffer = await ctx.decodeAudioData(await response.arrayBuffer());
-    const source = ctx.createBufferSource();
-    const gain = ctx.createGain();
-    gain.gain.value = mutedRef.current ? 0 : volumeRef.current;
-    source.buffer = buffer;
-    source.connect(gain).connect(ctx.destination);
-    source.start();
+    const sourceNode = ctx.createBufferSource();
+    const gain = ctx.createGain(); gain.gain.value = mutedRef.current ? 0 : volumeRef.current;
+    sourceNode.buffer = buffer; sourceNode.connect(gain).connect(ctx.destination); sourceNode.start();
   }
   async function changeDevice(value: string) {
     setDeviceId(value);
-    if (stream.current) {
-      shutdownMedia();
-      setTimeout(
-        () => prepare(true, value).catch(() => setMessage(t.closed)),
-        0,
-      );
-    }
+    if (stream.current) { shutdownMedia(); setTimeout(() => prepare(true, value).catch(() => setMessage(t.closed)), 0); }
   }
+  const languageLabel = (code: string) => languages.find(([value]) => value === code)?.[1] || code;
+  const statusText = status === "live" ? t.live : status === "paused" ? t.paused : status === "connecting" ? t.connecting : status === "stopping" ? t.stopping : t.idle;
+  const captionOptions = (value: string) => (
+    <>
+      <option value="none">{t.none}</option>
+      <option value="source">{t.source}</option>
+      {languages.filter(([code]) => code !== source).map(([code, label]) => <option value={code} key={`${value}-${code}`}>{label}</option>)}
+    </>
+  );
+
   return (
     <section className="interpreter-app" id="live-interpreter">
       <div className="app-heading">
-        <div>
-          <p className="section-kicker">LIVE INTERPRETER</p>
-          <h2>{mode === "caption" ? t.captionTitle : t.title}</h2>
-        </div>
-        <div className="wallet-pill">
-          {t.remain}
-          <strong>{formatCredits(remaining)}</strong>
-          <small>
-            {t.used} {formatCredits(elapsed * (mode === "caption" ? 1 : 12))}
-          </small>
-        </div>
+        <div><p className="section-kicker">LIVE INTERPRETER</p><h2>{t.title}</h2></div>
+        <div className="wallet-pill">{t.remain}<strong>{formatCredits(remaining)}</strong><small>{t.used} {formatCredits(elapsed * activeRate)}</small></div>
       </div>
-      <div className="mode-switch" role="group" aria-label="Mode">
-        <button
-          type="button"
-          className={mode === "interpretation" ? "active" : ""}
-          onClick={() => {
-            setMode("interpretation");
-            if (source === target) setTarget("en");
-          }}
-          disabled={status !== "idle"}
-        >
-          {t.interpretationMode}
-        </button>
-        <button
-          type="button"
-          className={mode === "caption" ? "active" : ""}
-          onClick={() => setMode("caption")}
-          disabled={status !== "idle"}
-        >
-          {t.captionMode}
-        </button>
+      <div className="session-config-grid">
+        <label>{t.mode}<select value={mode} onChange={(e) => setMode(e.target.value as Mode)} disabled={status !== "idle"}><option value="both">{t.both}</option><option value="audio">{t.audio}</option><option value="captions">{t.captions}</option></select></label>
+        <label>{t.input}<select value={source} onChange={(e) => setSource(e.target.value)} disabled={status !== "idle"}>{languages.map(([code, label]) => <option value={code} key={code}>{label}</option>)}</select></label>
+        {mode !== "captions" && <label>{t.output}<select value={target} onChange={(e) => setTarget(e.target.value)} disabled={status !== "idle"}>{languages.map(([code, label]) => <option value={code} key={code}>{label}</option>)}</select></label>}
+        {mode !== "audio" && <><label>{t.caption1}<select value={caption1} onChange={(e) => setCaption1(e.target.value)} disabled={status !== "idle"}>{captionOptions("one")}</select></label><label>{t.caption2}<select value={caption2} onChange={(e) => setCaption2(e.target.value)} disabled={status !== "idle"}>{captionOptions("two")}</select></label></>}
       </div>
-      {mode === "caption" ? (
-        <div className="caption-pair">
-          <strong>{t.captionPair}</strong>
-          <span>{t.captionHelp}</span>
-        </div>
-      ) : (
-        <div className="language-row app-languages">
-          <label>
-            {t.input}
-            <select
-              value={source}
-              onChange={(e) => setSource(e.target.value)}
-              disabled={status !== "idle"}
-            >
-              {languages.map(([v, l]) => (
-                <option value={v} key={v}>
-                  {l}
-                </option>
-              ))}
-            </select>
-          </label>
-          <span className="swap">→</span>
-          <label>
-            {t.output}
-            <select
-              value={target}
-              onChange={(e) => setTarget(e.target.value)}
-              disabled={status !== "idle"}
-            >
-              {languages.map(([v, l]) => (
-                <option value={v} key={v}>
-                  {l}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      )}
-      <label className="device-select">
-        {t.mic}
-        <select
-          value={deviceId}
-          onChange={(e) => changeDevice(e.target.value)}
-          disabled={status !== "idle"}
-        >
-          <option value="">Default</option>
-          {devices.map((device, index) => (
-            <option value={device.deviceId} key={device.deviceId}>
-              {device.label || `Microphone ${index + 1}`}
-            </option>
-          ))}
-        </select>
-      </label>
-      {mode === "interpretation" && (
-        <label className="glossary-field">
-          <span>{t.glossary}</span>
-          <textarea
-            value={glossaryText}
-            onChange={(e) => setGlossaryText(e.target.value)}
-            placeholder={t.glossaryExample}
-            rows={3}
-            disabled={status !== "idle"}
-          />
-          <small>{t.glossaryHelp}</small>
-          <button
-            type="button"
-            className={
-              useTerminologyMode
-                ? "terminology-toggle active"
-                : "terminology-toggle"
-            }
-            onClick={() => setUseTerminologyMode((enabled) => !enabled)}
-            disabled={
-              status !== "idle" ||
-              parseGlossary(glossaryText) === null ||
-              (parseGlossary(glossaryText)?.length ?? 0) === 0
-            }
-          >
-            {useTerminologyMode ? t.glossaryDisable : t.glossaryEnable}
-          </button>
-          {useTerminologyMode && (
-            <strong>
-              {t.glossaryActive} · {parseGlossary(glossaryText)?.length ?? 0}
-            </strong>
-          )}
-        </label>
-      )}
-      {mode === "caption" && (
-        <div className="caption-screen" aria-live="polite">
-          {captionLines.map((line) => (
-            <p key={line.itemId}>{line.text}</p>
-          ))}
-          {Object.entries(captionDrafts).map(([itemId, text]) => (
-            <p className="partial" key={itemId}>
-              {text}
-            </p>
-          ))}
-          {captionLines.length === 0 &&
-            Object.keys(captionDrafts).length === 0 && (
-              <p className="placeholder">{t.captionWaiting}</p>
-            )}
-        </div>
-      )}
-      <div className="meter">
-        <div style={{ width: `${level}%` }} />
-        <span>
-          <Mic size={16} /> INPUT {level}%
-        </span>
-      </div>
+      <div className="rate-summary"><span>{t.rate}</span><strong>{formatCredits(plannedRate)}</strong></div>
+      <label className="device-select">{t.mic}<select value={deviceId} onChange={(e) => changeDevice(e.target.value)} disabled={status !== "idle"}><option value="">{t.defaultMic}</option>{devices.map((device, index) => <option value={device.deviceId} key={device.deviceId}>{device.label || `Microphone ${index + 1}`}</option>)}</select></label>
+      {mode !== "audio" && <div className="dual-caption-screen" aria-live="polite">{[caption1, caption2].filter((code) => code !== "none").map((code, index) => { const key = code === source ? "source" : code; return <article key={`${code}-${index}`}><small>{index === 0 ? t.caption1 : t.caption2} · {code === "source" ? languageLabel(source) : languageLabel(code)}</small><p className={captionText[key] ? "" : "placeholder"}>{captionText[key] || t.captionWaiting}</p></article>; })}</div>}
+      <div className="meter"><div style={{ width: `${level}%` }} /><span><Mic size={16} /> INPUT {level}%</span></div>
       <div className="audio-controls">
-        <button className="secondary" onClick={() => prepare()}>
-          <Mic size={17} />
-          {t.enable}
-        </button>
-        {mode === "interpretation" && (
-          <button className="secondary" onClick={testSound}>
-            <Volume2 size={17} />
-            {t.test}
-          </button>
-        )}
-        {mode === "interpretation" && (
-          <button
-            className="secondary"
-            onClick={() => setMuted((value) => !value)}
-          >
-            {muted ? <VolumeX size={17} /> : <Volume2 size={17} />}{" "}
-            {muted ? t.unmute : t.mute}
-          </button>
-        )}
-        {mode === "interpretation" && (
-          <label>
-            <Volume2 size={16} />
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step=".05"
-              value={volume}
-              onChange={(e) => setVolume(Number(e.target.value))}
-            />
-          </label>
-        )}
+        <button className="secondary" onClick={() => prepare()}><Mic size={17} />{t.enable}</button>
+        {mode !== "captions" && <><button className="secondary" onClick={() => testSound()}><Volume2 size={17} />{t.test}</button><button className="secondary" onClick={() => setMuted((value) => !value)}>{muted ? <VolumeX size={17} /> : <Volume2 size={17} />}{muted ? t.unmute : t.mute}</button><input type="range" min="0" max="1" step="0.05" value={volume} onChange={(e) => setVolume(Number(e.target.value))} aria-label="volume" /></>}
       </div>
-      {status === "idle" ? (
-        <button
-          className="primary interpreter-start"
-          onClick={start}
-          disabled={remaining <= 0}
-        >
-          <Mic />
-          {mode === "caption" ? t.startCaption : t.start}
-        </button>
-      ) : (
-        <div className="live-actions">
-          {(status === "live" || status === "paused") && (
-            <button className="secondary" onClick={togglePause}>
-              {status === "paused" ? <Play /> : <Pause />}
-              {status === "paused" ? t.resume : t.pause}
-            </button>
-          )}
-          <button
-            className="stop-button"
-            onClick={stop}
-            disabled={status === "stopping"}
-          >
-            <Square />
-            {status === "stopping" ? t.stopping : t.stop}
-          </button>
-        </div>
-      )}
-      <p className={`status-line ${status}`}>
-        {status === "live"
-          ? mode === "caption"
-            ? t.captionLive
-            : t.live
-          : status === "paused"
-            ? t.paused
-            : t.idle}
-        {mode === "interpretation" && (
-          <span>
-            <Headphones size={15} />
-            {t.headphones}
-          </span>
-        )}
-      </p>
+      <div className={`live-status ${status}`}><span>{statusText}</span>{mode !== "captions" && <small><Headphones size={14} /> {t.headphones}</small>}</div>
       {message && <p className="form-message">{message}</p>}
-      {continuePrompt && (
-        <div className="continue-overlay" role="dialog" aria-modal="true">
-          <div className="continue-dialog">
-            <h3>{t.continueTitle}</h3>
-            <p>{t.continueText}</p>
-            <strong>
-              {t.secondsLeft} {Math.max(0, stopAt.current - elapsed)}s
-            </strong>
-            <div>
-              <button className="primary" onClick={continueInterpretation}>
-                {t.continueButton}
-              </button>
-              <button className="stop-button" onClick={stop}>
-                {t.endButton}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <div className="interpreter-actions">{status === "idle" ? <button className="primary" onClick={start}><Play size={18} />{t.start}</button> : <><button className="secondary" onClick={togglePause} disabled={status === "connecting" || status === "stopping"}>{status === "paused" ? <Play size={18} /> : <Pause size={18} />}{status === "paused" ? t.resume : t.pause}</button><button className="danger" onClick={stop}><Square size={17} />{t.stop}</button></>}</div>
+      {continuePrompt && <div className="continue-prompt"><h3>{t.continueTitle}</h3><p>{t.continueText}</p><div><button className="primary" onClick={continueInterpretation}>{t.continueButton}</button><button className="secondary" onClick={stop}>{t.endButton}</button></div></div>}
     </section>
   );
 }

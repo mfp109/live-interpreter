@@ -1,9 +1,3 @@
-export function isCaptionMode(claims) {
-  return (
-    claims?.mode === "caption" && claims?.src === "ja" && claims?.dst === "ja"
-  );
-}
-
 export function buildTranscriptionSession(language = "ja") {
   return {
     type: "transcription",

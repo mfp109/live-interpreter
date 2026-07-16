@@ -23,9 +23,9 @@ import { AdminPanel } from "./AdminPanel";
 import { LegalPage } from "./LegalPage";
 import { ResetPassword } from "./ResetPassword";
 import { AccountTools } from "./AccountTools";
-import { PreparationBrief } from "./PreparationBrief";
+import { isLocale, Locale, localeOptions } from "./locales";
+import { siteCopyExtra } from "./site-copy-extra";
 
-type Locale = "ja" | "en" | "zh-CN";
 type View = "home" | "account";
 const copy = {
   ja: {
@@ -338,15 +338,12 @@ function setMetaContent(selector: string, content: string) {
 
 function initialLocale(): Locale {
   const query = new URLSearchParams(location.search).get("lang");
-  if (query === "ja" || query === "en" || query === "zh-CN") return query;
+  if (isLocale(query)) return query;
   const saved = localStorage.getItem("swli.locale");
-  if (saved === "ja" || saved === "en" || saved === "zh-CN") return saved;
+  if (isLocale(saved)) return saved;
   const browser = navigator.language.toLowerCase();
-  return browser.startsWith("zh")
-    ? "zh-CN"
-    : browser.startsWith("en")
-      ? "en"
-      : "ja";
+  const matched = localeOptions.find(([code]) => browser.startsWith(code.toLowerCase().split("-")[0]));
+  return matched?.[0] || "ja";
 }
 
 export function App() {
@@ -363,16 +360,15 @@ export function App() {
   const [products, setProducts] = useState<Product[]>(fallbackProducts);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [flash, setFlash] = useState("");
-  const [terminologyPreset, setTerminologyPreset] = useState<{
-    source: string;
-    target: string;
-    terms: { source: string; translation: string }[];
-  } | null>(null);
-  const t = copy[locale];
+  const t = {
+    ...copy.en,
+    ...(copy[locale as keyof typeof copy] || {}),
+    ...(siteCopyExtra[locale] || {}),
+  };
   const heroLines = useMemo(() => t.hero.split("\n"), [t.hero]);
   useEffect(() => {
     localStorage.setItem("swli.locale", locale);
-    const metadata = pageMetadata[locale];
+    const metadata = pageMetadata[locale as keyof typeof pageMetadata] ?? pageMetadata.en;
     document.documentElement.lang = metadata.lang;
     document.title = metadata.title;
     setMetaContent('meta[name="description"]', metadata.description);
@@ -553,9 +549,9 @@ export function App() {
               value={locale}
               onChange={(e) => setLocale(e.target.value as Locale)}
             >
-              <option value="ja">日本語</option>
-              <option value="en">English</option>
-              <option value="zh-CN">简体中文</option>
+              {localeOptions.map(([code, label]) => (
+                <option value={code} key={code}>{label}</option>
+              ))}
             </select>
           </label>
           <button className="link-button" onClick={openAccount}>
@@ -608,16 +604,10 @@ export function App() {
             <AdminPanel csrf={csrf} />
           ) : (
             <>
-              <PreparationBrief
-                csrf={csrf}
-                locale={locale}
-                onApplyToInterpreter={setTerminologyPreset}
-              />
               <Interpreter
                 wallet={wallet}
                 csrf={csrf}
                 locale={locale}
-                terminologyPreset={terminologyPreset}
                 onBalance={(seconds) =>
                   setWallet((w) => ({
                     ...w,

@@ -14,8 +14,9 @@ $body = json_decode($raw, true);
 $sessionId = (string)($body['session_id'] ?? '');
 $sequence = filter_var($body['sequence'] ?? null, FILTER_VALIDATE_INT);
 $seconds = filter_var($body['seconds'] ?? null, FILTER_VALIDATE_INT);
+$creditsPerSecond = filter_var($body['credits_per_second'] ?? null, FILTER_VALIDATE_INT);
 $final = ($body['final'] ?? false) === true;
-if (!preg_match('/^[a-f0-9-]{36}$/', $sessionId) || $sequence === false || $sequence < 1 || $seconds === false || $seconds < 0 || $seconds > 30 || ($seconds === 0 && !$final)) json_error('VALIDATION_ERROR', 'Invalid settlement.');
+if (!preg_match('/^[a-f0-9-]{36}$/', $sessionId) || $sequence === false || $sequence < 1 || $seconds === false || $seconds < 0 || $seconds > 30 || $creditsPerSecond === false || $creditsPerSecond < 1 || $creditsPerSecond > 37 || ($seconds === 0 && !$final)) json_error('VALIDATION_ERROR', 'Invalid settlement.');
 
 $pdo = db($config);
 try {
@@ -24,7 +25,6 @@ try {
     $stmt->execute([$sessionId]);
     $session = $stmt->fetch();
     if (!$session || !in_array($session['status'], ['authorized','active'], true)) throw new RuntimeException('SESSION_NOT_ACTIVE');
-    $creditsPerSecond = $session['source_language'] === 'ja' && $session['target_language'] === 'ja' ? 1 : 12;
     expire_credit_lots($pdo,$session['user_id']);
     $walletStmt=$pdo->prepare('SELECT trial_seconds,paid_seconds FROM wallets WHERE user_id=? FOR UPDATE');$walletStmt->execute([$session['user_id']]);$wallet=$walletStmt->fetch();$session['trial_seconds']=$wallet['trial_seconds'];$session['paid_seconds']=$wallet['paid_seconds'];
     $eventId = uuid_v4();

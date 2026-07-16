@@ -7,7 +7,7 @@ type Kind =
   | "refund"
   | "cookie"
   | "contact";
-type Locale = "ja" | "en" | "zh-CN";
+import type { Locale } from "./locales";
 const content = {
   ja: {
     terms: [
@@ -202,9 +202,10 @@ export function LegalPage({ kind, locale }: { kind: Kind; locale: Locale }) {
       .then((r) => setLegal(r.legal))
       .catch(() => {});
   }, []);
-  const t = content[locale];
+  const supportedLocale = locale in content ? locale as keyof typeof content : "en";
+  const t = content[supportedLocale];
   if (kind === "refund" || kind === "cookie" || kind === "contact") {
-    const sections = supplemental[locale][kind];
+    const sections = supplemental[supportedLocale][kind];
     return (
       <article className="legal-page">
         <h1>{sections[0]}</h1>

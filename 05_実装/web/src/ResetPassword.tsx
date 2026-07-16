@@ -1,6 +1,6 @@
 import { FormEvent, useState } from "react";
 import { api } from "./api";
-type Locale = "ja" | "en" | "zh-CN";
+import type { Locale } from "./locales";
 const text = {
   ja: {
     title: "パスワード再設定",
@@ -28,7 +28,7 @@ export function ResetPassword({
   token: string;
   locale: Locale;
 }) {
-  const t = text[locale];
+  const t = text[(locale in text ? locale : "en") as keyof typeof text];
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   async function submit(e: FormEvent) {

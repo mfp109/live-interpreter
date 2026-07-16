@@ -218,6 +218,73 @@ footer a {
   background: #fff;
   box-shadow: 0 20px 60px #254f4320;
 }
+.session-config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 16px;
+  margin: 24px 0 16px;
+}
+.session-config-grid label,
+.device-select {
+  display: grid;
+  gap: 7px;
+  color: #47605f;
+  font-size: 13px;
+  font-weight: 800;
+}
+.session-config-grid select,
+.device-select select {
+  width: 100%;
+  padding: 12px 13px;
+  border: 1px solid #cddbd6;
+  border-radius: 12px;
+  background: white;
+  font: inherit;
+}
+.rate-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 18px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #edf6f1;
+  color: #47605f;
+}
+.rate-summary strong {
+  color: #17695f;
+  font-size: 21px;
+}
+.dual-caption-screen {
+  display: grid;
+  gap: 12px;
+  margin: 22px 0;
+}
+.dual-caption-screen article {
+  min-height: 112px;
+  padding: 17px 20px;
+  border: 1px solid #cadbd5;
+  border-radius: 16px;
+  background: #102f33;
+  color: white;
+}
+.dual-caption-screen small {
+  display: block;
+  margin-bottom: 10px;
+  color: #9fc9bf;
+  font-weight: 800;
+}
+.dual-caption-screen p {
+  margin: 0;
+  white-space: pre-wrap;
+  font-size: clamp(20px, 3vw, 34px);
+  line-height: 1.45;
+}
+.dual-caption-screen .placeholder {
+  color: #aec0bd;
+  font-size: 16px;
+}
 .preparation-brief {
   max-width: 1160px;
   margin: 38px auto;

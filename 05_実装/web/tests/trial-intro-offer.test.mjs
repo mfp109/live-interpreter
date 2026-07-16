@@ -34,12 +34,13 @@ test("subscription migration defines monthly plans and top-up credit packs", asy
   assert.match(migration, /UPDATE wallets SET trial_seconds=trial_seconds\*12/);
 });
 
-test("voice interpretation consumes 12 LI credits per second", async () => {
+test("realtime usage consumes the trusted dynamic LI credit rate", async () => {
   const settlement = await readFile(
     new URL("api/interpreter/settle.php", root),
     "utf8",
   );
-  assert.match(settlement, /\? 1 : 12/);
+  assert.match(settlement, /credits_per_second/);
+  assert.match(settlement, /\$requestedCredits=\$seconds\*\$creditsPerSecond/);
   assert.match(settlement, /\$requestedCredits=\$seconds\*\$creditsPerSecond/);
 });
 

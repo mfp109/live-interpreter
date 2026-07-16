@@ -11,14 +11,8 @@ export function verifyAccessToken(token, secret, now = Math.floor(Date.now() / 1
   if (expected.length !== supplied.length || !crypto.timingSafeEqual(expected, supplied)) throw new Error("token_invalid");
   const claims = JSON.parse(decode(payloadText).toString("utf8"));
   if (!claims.sid || !claims.uid || !claims.dst || !claims.nonce || !claims.exp || claims.exp < now) throw new Error("token_expired");
-  if (claims.glossary !== undefined) {
-    if (!Array.isArray(claims.glossary) || claims.glossary.length > 20) throw new Error("token_invalid");
-    for (const entry of claims.glossary) {
-      if (!entry || typeof entry.source !== "string" || typeof entry.translation !== "string" || !entry.source.trim() || !entry.translation.trim() || entry.source.length > 160 || entry.translation.length > 160) {
-        throw new Error("token_invalid");
-      }
-    }
-  }
+  if (!Array.isArray(claims.translation_targets) || !Array.isArray(claims.captions))
+    throw new Error("token_invalid");
   return claims;
 }
 

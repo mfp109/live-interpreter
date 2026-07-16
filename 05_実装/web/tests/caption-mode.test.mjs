@@ -4,41 +4,34 @@ import test from "node:test";
 
 const root = new URL("../", import.meta.url);
 
-test("caption authorization is Japanese-only and disables terminology mode", async () => {
-  const authorization = await readFile(
-    new URL("api/interpreter/authorize.php", root),
-    "utf8",
-  );
-  assert.match(authorization, /\$mode === 'caption'/);
-  assert.match(authorization, /\$source = 'ja'/);
-  assert.match(authorization, /\$target = 'ja'/);
-  assert.match(authorization, /\$mode === 'interpretation' &&/);
-  assert.match(authorization, /'mode'=>\$mode/);
+test("authorization supports audio, combined, and two-caption modes", async () => {
+  const authorization = await readFile(new URL("api/interpreter/authorize.php", root), "utf8");
+  assert.match(authorization, /\['audio','both','captions'\]/);
+  assert.match(authorization, /count\(\$rawCaptions\) > 2/);
+  assert.match(authorization, /count\(\$translationTargets\) \* 12/);
+  assert.match(authorization, /\$transcribeSource \? 1 : 0/);
+  assert.doesNotMatch(authorization, /glossary|terminology/i);
 });
 
-test("caption sessions consume one credit per second", async () => {
-  const settlement = await readFile(
-    new URL("api/interpreter/settle.php", root),
-    "utf8",
-  );
-  assert.match(
-    settlement,
-    /source_language'\] === 'ja' && \$session\['target_language'\] === 'ja' \? 1 : 12/,
-  );
-  assert.match(settlement, /'credits_per_second'=>\$creditsPerSecond/);
+test("trusted gateway supplies the configured per-second credit rate", async () => {
+  const settlement = await readFile(new URL("api/interpreter/settle.php", root), "utf8");
+  assert.match(settlement, /credits_per_second/);
+  assert.match(settlement, /\$creditsPerSecond > 37/);
+  assert.match(settlement, /\$requestedCredits=\$seconds\*\$creditsPerSecond/);
 });
 
-test("caption UI requests caption mode and renders live transcript events", async () => {
-  const interpreter = await readFile(
-    new URL("src/Interpreter.tsx", root),
-    "utf8",
-  );
-  assert.match(
-    interpreter,
-    /type InterpreterMode = "interpretation" \| "caption"/,
-  );
-  assert.match(interpreter, /data\.type === "caption_delta"/);
-  assert.match(interpreter, /data\.type === "caption_completed"/);
-  assert.match(interpreter, /mode === "caption" \? 1 : 12/);
-  assert.match(interpreter, /className="caption-screen"/);
+test("web UI exposes Mac-equivalent output modes and two caption lanes", async () => {
+  const interpreter = await readFile(new URL("src/Interpreter.tsx", root), "utf8");
+  assert.match(interpreter, /type Mode = "both" \| "audio" \| "captions"/);
+  assert.match(interpreter, /caption_languages: captionLanguages/);
+  assert.match(interpreter, /className="dual-caption-screen"/);
+  assert.match(interpreter, /caption1/);
+  assert.match(interpreter, /caption2/);
+  assert.doesNotMatch(interpreter, /glossary|terminology/i);
+});
+
+test("web site offers the same 13 display languages as the Mac app", async () => {
+  const locales = await readFile(new URL("src/locales.ts", root), "utf8");
+  for (const code of ["ja","en","zh-CN","es","pt","fr","de","ru","ko","hi","id","vi","it"])
+    assert.match(locales, new RegExp(`\\["${code}"`));
 });

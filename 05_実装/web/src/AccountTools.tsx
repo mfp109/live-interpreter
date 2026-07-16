@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { api, formatTime } from "./api";
-type Locale = "ja" | "en" | "zh-CN";
+import type { Locale } from "./locales";
 const text = {
   ja: {
     history: "購入・利用履歴",
@@ -82,7 +82,7 @@ export function AccountTools({
   csrf: string;
   onDeleted: () => void;
 }) {
-  const t = text[locale];
+  const t = text[(locale in text ? locale : "en") as keyof typeof text];
   const [payments, setPayments] = useState<Payment[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [email, setEmail] = useState("");
