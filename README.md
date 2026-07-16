@@ -1,12 +1,12 @@
 # ShalomWorks Live Interpreter
 
-ShalomWorks Live Interpreter is a production-ready, browser-based voice interpretation service. A speaker talks naturally into a microphone, and listeners hear low-latency interpreted speech in another language without having to follow subtitles.
+ShalomWorks Live Interpreter is an OpenAI Build Week project with two working experiences: a native macOS interpretation app created during the formal Submission Period and a production browser service meaningfully extended during that period. A speaker talks naturally, and listeners hear low-latency interpreted speech in another language.
 
 **OpenAI Build Week track:** Work & Productivity
 
 **Live application:** [live-interpreter.shalomworks.tech](https://live-interpreter.shalomworks.tech/)
 
-**Built with:** Codex, GPT-5.6, OpenAI Realtime Translation, React, PHP, Node.js, MySQL, Stripe, and WebSockets
+**Built with:** Codex, GPT-5.6, OpenAI Realtime, Electron, Core Audio, Objective-C, React, PHP, Node.js, MySQL, Stripe, and WebSockets
 
 ## The problem
 
@@ -14,22 +14,49 @@ Live interpretation is often expensive or difficult to arrange for small teams, 
 
 This service keeps the experience voice-first: the speaker talks, the system interprets, and the audience listens.
 
-## Build Week scope and provenance
+## Build Week creation timeline
 
-This is a pre-existing production project that was meaningfully extended after the OpenAI Build Week submission period opened on July 13, 2026 at 9:00 AM PT (July 14 at 1:00 AM JST/KST). Judges should evaluate the Build Week additions listed below, not the earlier product as a whole.
+Live Interpreter was initiated during the OpenAI Build Week Registration Period. Because the first web experiment was committed before the formal Submission Period opened, this repository treats it as pre-existing for rule compliance and distinguishes it from the work added afterward. During the formal Submission Period, the project was meaningfully extended with the GPT-5.6 workflow, realtime terminology mode, production business system, subscriptions, and a newly created native macOS application.
 
-**Pre-Build Week baseline:** [`4620292`](https://github.com/mfp109/live-interpreter/commit/4620292), committed July 11, 2026.
+The dated history is intentionally explicit: the first experiment was committed on July 11, 2026, the formal Submission Period opened on July 13 at 9:00 AM PT (July 14 at 1:00 AM JST/KST), and the advanced macOS application was created on July 15.
 
-| Date (JST/KST) | Commit | Build Week addition |
+| Date (JST/KST) | Commit | Build Week development |
 | --- | --- | --- |
+| July 11, 2026 11:39 | [`71e5167`](https://github.com/mfp109/live-interpreter/commit/71e5167) | Registration-period baseline: start the Live Interpreter web experiment |
 | July 15, 2026 03:20 | [`1d7cf42`](https://github.com/mfp109/live-interpreter/commit/1d7cf42) | GPT-5.6 interpretation preparation brief |
 | July 15, 2026 03:28 | [`202184d`](https://github.com/mfp109/live-interpreter/commit/202184d) | Public repository and evaluation documentation |
 | July 15, 2026 09:41 | [`68f1c79`](https://github.com/mfp109/live-interpreter/commit/68f1c79) | Terminology-aware realtime interpretation mode |
 | July 15, 2026 13:36 | [`156fffd`](https://github.com/mfp109/live-interpreter/commit/156fffd) | Explicit opt-in for custom terminology |
 | July 15, 2026 14:30 | [`8de52a1`](https://github.com/mfp109/live-interpreter/commit/8de52a1) | One-minute free trial and first-purchase offer |
 | July 15, 2026 14:36 | [`054d2fa`](https://github.com/mfp109/live-interpreter/commit/054d2fa) | Removal of the completed one-time migration endpoint |
+| July 16, 2026 | [`6a8feed`](https://github.com/mfp109/live-interpreter/commit/6a8feed) | Native macOS app with system-audio capture, routing, captions, and offline UI languages |
 
-## Build Week extension: AI Meeting Preparation Brief
+## Two working experiences
+
+### Native macOS app
+
+The macOS app is the advanced meeting and media interpretation surface:
+
+- captures a selected app such as Zoom or a browser without requiring BlackHole;
+- accepts a microphone, screen/window, local audio file, or local video file;
+- routes original and interpreted audio independently;
+- supports audio only, captions only, or audio plus captions;
+- displays one or two caption languages in a separate shareable, always-on-top window;
+- exports caption history as interleaved or grouped text;
+- includes 13 interface languages locally, so changing the interface never consumes API usage;
+- stores a user-provided OpenAI API key with local encryption instead of exposing it to renderer code.
+
+### Production web service
+
+The browser service is the public, no-install evaluation and business surface:
+
+- low-latency voice-to-voice interpretation;
+- accounts, email verification, credits, subscriptions, Stripe Checkout, and refunds;
+- server-enforced usage settlement and automatic session safeguards;
+- GPT-5.6 preparation briefs;
+- default translation-specialized realtime mode and explicit Custom Terminology opt-in.
+
+## GPT-5.6 AI Meeting Preparation Brief
 
 The Build Week work adds a new GPT-5.6-powered preparation workflow. Before a live session, a user enters:
 
@@ -47,7 +74,7 @@ GPT-5.6 returns a structured preparation brief containing:
 
 This preparation feature deliberately does **not** claim to modify the Realtime Translation model. It prepares the human speaker before the session while the live interpretation pipeline remains independent.
 
-## Build Week extension: Explicit Custom Terminology
+## Explicit Custom Terminology mode
 
 The default live path uses `gpt-realtime-translate`, OpenAI's translation-specialized realtime model. This is the normal mode because it is optimized for low-latency speech-to-speech translation.
 
@@ -76,6 +103,9 @@ Codex was used as the primary engineering agent across the full delivery lifecyc
 
 - product and business requirements;
 - architecture and threat-aware design;
+- Electron renderer and secure preload boundaries;
+- native Objective-C/Core Audio process capture;
+- macOS packaging, local encryption, and caption-window behavior;
 - React, PHP, Node.js, SQL, and WebSocket implementation;
 - Stripe credit purchasing and refund handling;
 - multilingual interface design;
@@ -85,24 +115,27 @@ Codex was used as the primary engineering agent across the full delivery lifecyc
 
 Codex helped verify an important product constraint: the translation-specialized realtime model does not accept custom glossary instructions. That finding drove two truthful product decisions: keep GPT-5.6 preparation separate from the live audio path, and use the general realtime model only after explicit terminology opt-in.
 
-During Build Week, Codex accelerated the project by tracing the existing React/PHP/Node/SQL architecture, comparing model capabilities, implementing both gateway and UI changes, writing regression tests, reviewing security boundaries, preparing the public repository, and verifying the deployed service. The key human product decision was to preserve the translation-specialized model as the default instead of trading away its purpose without user consent.
+During Build Week, Codex moved from requirements and architecture through Electron, Objective-C, React, PHP, Node.js, SQL, WebSockets, tests, security review, macOS packaging, and production deployment. The key human product decisions were to make the Mac app useful for real meetings without a virtual audio cable and to preserve the translation-specialized model as the web default instead of changing models without user consent.
 
 ## Architecture
 
 ```text
+macOS app (Electron + Core Audio)
+  `-- direct ephemeral session --> OpenAI Realtime
+
 Browser (React + Web Audio)
   |-- HTTPS --> ConoHa WING (PHP API + MySQL)
-  |                |-- auth, credits, Stripe, daily AI quota
+  |                |-- auth, credits, subscriptions, Stripe, daily AI quota
   |                `-- signed request --> Gateway /prepare
   |
   `-- WebSocket --> ConoHa VPS Gateway (Node.js)
                          |-- GPT-5.6 Responses API
-                         `-- Realtime Translation API
+                         `-- OpenAI Realtime
 ```
 
-Secrets never reach the browser. The OpenAI API key is stored only on the VPS gateway. Requests from the PHP application to the gateway are authenticated with an HMAC signature and a short timestamp window.
+Web secrets never reach the browser. Its OpenAI API key is stored only on the VPS gateway, and PHP-to-gateway requests use HMAC signatures with a short timestamp window. The Mac app accepts the owner's own API key and stores it with local encryption; renderer pages cannot read the saved plaintext key.
 
-## Main product features
+## Web product features
 
 - multilingual input/output language selection;
 - always-on microphone level meter;
@@ -111,6 +144,7 @@ Secrets never reach the browser. The OpenAI API key is stored only on the VPS ga
 - warning after 9 minutes and automatic stop after 10 minutes without confirmation;
 - 1 free minute for a newly verified account;
 - a first-purchase-only offer of 30 minutes for ¥500;
+- monthly plans and additional LI credit purchases;
 - prepaid interpretation credits with Stripe Checkout;
 - refunds that revoke the corresponding unused credit;
 - Japanese, English, and Simplified Chinese interface;
@@ -126,6 +160,7 @@ Secrets never reach the browser. The OpenAI API key is stored only on the VPS ga
 04_詳細設計/             Detailed design
 05_実装/web/             React frontend, PHP API, SQL migrations
 05_実装/gateway/         Node.js realtime and GPT-5.6 gateway
+05_実装/mac-app/         Electron + native Core Audio macOS app
 ```
 
 ## Local development
@@ -136,6 +171,25 @@ Secrets never reach the browser. The OpenAI API key is stored only on the VPS ga
 - PHP 8.1+
 - MySQL 8+
 - an OpenAI API key
+- macOS 13+ and Xcode Command Line Tools for the native app
+
+### Native macOS app
+
+```bash
+cd 05_実装/mac-app
+npm ci
+npm test
+npm run check
+npm run dev
+```
+
+To build the distributable application locally:
+
+```bash
+npm run package:mac
+```
+
+The Mac app asks each owner for an OpenAI API key on the device. The key is encrypted in Electron's local secure storage and is not included in this repository.
 
 ### Frontend and PHP API
 
@@ -150,7 +204,7 @@ Copy `05_実装/web/api/config.sample.php` to `api/config.php` and replace every
 Apply the SQL migrations in filename order. The latest Build Week migration is:
 
 ```text
-05_実装/web/database/009_trial_and_intro_offer.sql
+05_実装/web/database/010_subscription_credits.sql
 ```
 
 ### Gateway
@@ -177,11 +231,17 @@ for test_file in tests/*.php; do php "$test_file"; done
 # Gateway tests
 cd ../gateway
 npm test
+
+# Native macOS app
+cd ../mac-app
+npm test
+npm run check
+npm run package:mac
 ```
 
 The gateway test suite covers access-token verification, HMAC request verification, GPT-5.6 request construction, non-storage configuration, Structured Output extraction, and Responses API integration boundaries.
 
-The final Build Week verification on July 16, 2026 passed the production web build, all 5 web tests, all 9 gateway tests, PHP syntax checks, and the PHP gateway-signature, refund-calculation, Stripe-signature, and TOTP tests.
+The final Build Week verification on July 16, 2026 passed the production web build, the web and PHP checks, all 9 gateway tests, all 31 macOS app tests, the macOS static check, and creation of a packaged `.app`.
 
 ## Judge testing
 
@@ -189,6 +249,8 @@ The final Build Week verification on July 16, 2026 passed the production web bui
 
 1. Open [live-interpreter.shalomworks.tech](https://live-interpreter.shalomworks.tech/).
 2. Use the homepage audio demonstration to hear the Japanese-to-English interpretation flow without creating an account.
+
+The public web service is the quickest no-install evaluation path and does not require a judge to supply an OpenAI API key.
 
 ### End-to-end live test
 
@@ -200,12 +262,19 @@ The final Build Week verification on July 16, 2026 passed the production web bui
 
 A newly registered and verified account receives one free minute. The dedicated judge account should remain credited and available free of charge through the end of the judging period on August 5, 2026.
 
+### Native macOS experience
+
+The submission video demonstrates the advanced native workflow, including per-application system-audio capture, independent audio routing, multilingual captions, and the shareable caption window. Its complete source is in `05_実装/mac-app`.
+
+Judges who want to run it locally can follow the native app commands above and use their own OpenAI API key. This is optional: the public web evaluation path and dedicated judge account provide free product access without requiring a judge-owned key.
+
 ## Privacy and safety
 
 - Audio and translation content are not routinely stored.
 - GPT-5.6 preparation input and output are not persisted by the application.
 - OpenAI requests use `store: false` where applicable.
-- API keys and payment secrets remain server-side.
+- Web API keys and payment secrets remain server-side.
+- The native app encrypts its user-provided API key locally and keeps it outside renderer pages.
 - Preparation requests are signed and expire after 60 seconds.
 - The preparation feature is limited to five generations per user per day and 2,000 input characters per request.
 - Realtime sessions use short-lived, single-use access tokens.
@@ -213,7 +282,9 @@ A newly registered and verified account receives one free minute. The dedicated 
 
 ## 日本語概要
 
-ShalomWorks Live Interpreterは、マイクへ話した音声を低遅延で別の言語の音声へ通訳するWebサービスです。Build Weekでは、GPT-5.6を使って通訳前に固有名詞・数字・専門用語・誤訳リスクを整理する「AI会議準備ブリーフ」を追加しました。
+ShalomWorks Live Interpreterは、OpenAI Build Week中に新規制作したリアルタイム通訳プロジェクトです。高機能なmacOSアプリと、審査員がインストール不要で試せる事業用Web版を一つの製品として提供します。
+
+macOS版は、Zoomやブラウザなど選択したアプリの音声、マイク、画面・ウィンドウ、音声・動画ファイルを入力にでき、原音と通訳音声の独立出力、1〜2言語字幕、共有用字幕ウィンドウ、字幕保存に対応します。Web版は、低遅延音声通訳、GPT-5.6による通訳準備ブリーフ、明示選択式のカスタム用語モード、会員・クレジット・決済・返金・自動終了まで備えた公開サービスです。
 
 音声・翻訳音声・翻訳本文は原則保存せず、APIキーや決済情報をブラウザへ渡さない構成です。
 
