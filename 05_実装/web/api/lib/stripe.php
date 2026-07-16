@@ -5,7 +5,10 @@ function stripe_request(array $config, string $method, string $path, array $fiel
 {
     $secret = (string)($config['stripe_secret_key'] ?? '');
     if ($secret === '' || $secret === 'CHANGE_ME') throw new RuntimeException('Stripe is not configured.');
-    $curl = curl_init('https://api.stripe.com' . $path);
+    $query = http_build_query($fields);
+    $url = 'https://api.stripe.com' . $path;
+    if (strtoupper($method) === 'GET' && $query !== '') $url .= '?' . $query;
+    $curl = curl_init($url);
     $headers = ['Authorization: Bearer ' . $secret, 'Content-Type: application/x-www-form-urlencoded'];
     if ($idempotencyKey) $headers[] = 'Idempotency-Key: ' . $idempotencyKey;
     curl_setopt_array($curl, [
@@ -13,8 +16,8 @@ function stripe_request(array $config, string $method, string $path, array $fiel
         CURLOPT_HTTPHEADER => $headers,
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 20,
-        CURLOPT_POSTFIELDS => http_build_query($fields),
     ]);
+    if (strtoupper($method) !== 'GET') curl_setopt($curl, CURLOPT_POSTFIELDS, $query);
     $body = curl_exec($curl);
     $status = (int)curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
     $curlError = curl_error($curl);

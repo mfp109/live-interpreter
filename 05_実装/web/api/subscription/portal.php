@@ -12,8 +12,20 @@ $subscription=active_subscription($pdo,(string)$user['id']);
 if(!$subscription)json_error('SUBSCRIPTION_NOT_FOUND','No subscription is available to manage.',404);
 
 try{
+    $configurations=stripe_request($config,'GET','/v1/billing_portal/configurations',[
+        'active'=>'true','limit'=>20,
+    ]);
+    $portalConfiguration=null;
+    foreach(($configurations['data']??[]) as $candidate){
+        if(!empty($candidate['features']['subscription_cancel']['enabled'])){
+            $portalConfiguration=(string)($candidate['id']??'');
+            break;
+        }
+    }
+    if(!$portalConfiguration)throw new RuntimeException('PORTAL_CONFIGURATION_MISSING');
     $session=stripe_request($config,'POST','/v1/billing_portal/sessions',[
         'customer'=>$subscription['stripe_customer_id'],
+        'configuration'=>$portalConfiguration,
         'return_url'=>rtrim($config['app_url'],'/').'/account',
     ],'portal:'.$user['id'].':'.gmdate('YmdHi'));
     json_response(['ok'=>true,'portal_url'=>$session['url']]);
