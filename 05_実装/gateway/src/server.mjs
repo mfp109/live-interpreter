@@ -270,7 +270,7 @@ wss.on("connection", (client, request) => {
       const terminologyMode = shouldUseTerminologyMode(claims);
       const captionMode = isCaptionMode(claims);
       const upstreamUrl = captionMode
-        ? "wss://api.openai.com/v1/realtime?model=gpt-realtime-whisper"
+        ? "wss://api.openai.com/v1/realtime?intent=transcription"
         : terminologyMode
           ? "wss://api.openai.com/v1/realtime?model=gpt-realtime"
           : "wss://api.openai.com/v1/realtime/translations?model=gpt-realtime-translate";
