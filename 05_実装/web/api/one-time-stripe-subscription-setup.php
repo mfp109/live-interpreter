@@ -78,5 +78,5 @@ try{
     ]);
 }catch(Throwable $error){
     error_log('Stripe subscription setup failed: '.$error->getMessage());
-    json_error('STRIPE_SETUP_FAILED','Stripe subscription setup failed.',500);
+    json_error('STRIPE_SETUP_FAILED',substr($error->getMessage(),0,200),500);
 }
