@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:">
+  <title>設定｜Live Interpreter</title>
+  <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+  <main>
+    <p class="eyebrow">LIVE INTERPRETER</p>
+    <h1 data-i18n="settings">設定</h1>
+    <section>
+      <div class="section-head">
+        <div><h2 data-i18n="appLanguage">アプリの表示言語</h2><p data-i18n="appLanguageNote">音声出力に対応している言語から選択できます。初回の切替には少し時間がかかることがあります。</p></div>
+      </div>
+      <label for="uiLanguage" data-i18n="appLanguage">アプリの表示言語</label>
+      <select id="uiLanguage"></select>
+      <p id="languageMessage" role="status" aria-live="polite"></p>
+    </section>
+    <section>
+      <div class="section-head">
+        <div><h2 data-i18n="apiKey">OpenAI APIキー</h2><p id="apiKeyStatus" data-i18n="checking">確認中…</p></div>
+        <span id="statusBadge" data-i18n="unchecked">未確認</span>
+      </div>
+      <form id="apiKeyForm">
+        <label for="apiKey" data-i18n="newApiKey">新しいAPIキー</label>
+        <input id="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-…" required>
+        <p class="note" data-i18n="apiKeyNote">保存済みのキーは表示されません。新しいキーを保存すると、現在のキーを置き換えます。</p>
+        <div class="actions"><button id="saveButton" type="submit" data-i18n="saveApiKey">APIキーを保存</button></div>
+      </form>
+      <p id="message" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+  <script src="settings.js"></script>
+</body>
+</html>

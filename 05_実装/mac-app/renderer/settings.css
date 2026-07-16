@@ -1,0 +1,22 @@
+:root { color-scheme: dark; font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif; }
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; color: #edf7ff; background: linear-gradient(145deg, #071522, #0c2133); }
+main { display: grid; width: min(100%, 680px); margin: 0 auto; padding: 30px; gap: 14px; }
+.eyebrow { margin: 0 0 4px; color: #52d8ff; font-size: 11px; font-weight: 800; letter-spacing: .14em; }
+h1 { margin: 0 0 8px; font-size: 28px; }
+section { padding: 20px; border: 1px solid #29465f; border-radius: 16px; background: rgba(7, 19, 30, .86); box-shadow: 0 16px 42px rgba(0, 0, 0, .24); }
+.section-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+h2 { margin: 0; font-size: 17px; }
+.section-head p { margin: 5px 0 18px; color: #9db2c3; font-size: 13px; }
+#statusBadge { flex: none; padding: 5px 9px; border: 1px solid #486278; border-radius: 999px; color: #b9cad8; font-size: 11px; font-weight: 700; }
+#statusBadge.configured { border-color: #248d71; color: #7ff0c9; background: rgba(27, 126, 98, .18); }
+form { display: grid; gap: 8px; }
+label { color: #d9e8f4; font-size: 13px; font-weight: 700; }
+input, select { width: 100%; padding: 11px 12px; border: 1px solid #3a5b75; border-radius: 9px; color: white; background: #06111b; font: inherit; outline: none; }
+input:focus, select:focus { border-color: #42c9ee; box-shadow: 0 0 0 3px rgba(66, 201, 238, .14); }
+.note { margin: 1px 0 7px; color: #8fa5b7; font-size: 11px; line-height: 1.55; }
+.actions { display: flex; justify-content: flex-end; }
+button { padding: 9px 16px; border: 0; border-radius: 9px; color: #04111a; background: #51d7fa; font: inherit; font-weight: 800; cursor: pointer; }
+button:disabled { opacity: .55; cursor: wait; }
+#message, #languageMessage { min-height: 18px; margin: 12px 0 0; color: #7ff0c9; font-size: 12px; }
+#message.error, #languageMessage.error { color: #ff9e9e; }
