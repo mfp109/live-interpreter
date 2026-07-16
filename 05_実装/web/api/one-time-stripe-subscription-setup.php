@@ -17,6 +17,7 @@ if(!hash_equals(SETUP_TOKEN_HASH,hash('sha256',$token))){
 }
 
 try{
+    $stage='list_webhooks';
     $requiredEvents=[
         'checkout.session.completed','charge.refunded','charge.dispute.created',
         'refund.updated','refund.failed','invoice.paid','invoice.payment_failed',
@@ -34,6 +35,7 @@ try{
     if(!$webhook)throw new RuntimeException('WEBHOOK_ENDPOINT_NOT_FOUND');
     $enabled=(array)($webhook['enabled_events']??[]);
     if(!in_array('*',$enabled,true)){
+        $stage='update_webhook';
         $enabled=array_values(array_unique(array_merge($enabled,$requiredEvents)));
         sort($enabled);
         $fields=[];
@@ -41,6 +43,7 @@ try{
         $webhook=stripe_request($config,'POST','/v1/webhook_endpoints/'.rawurlencode((string)$webhook['id']),$fields,'subscription-events-v1');
     }
 
+    $stage='list_portal_configurations';
     $configurations=stripe_request($config,'GET','/v1/billing_portal/configurations',['active'=>'true','limit'=>100]);
     $portal=null;
     foreach(($configurations['data']??[]) as $candidate){
@@ -50,6 +53,7 @@ try{
         }
     }
     if(!$portal){
+        $stage='create_portal_configuration';
         $base=rtrim((string)$config['app_url'],'/');
         $portal=stripe_request($config,'POST','/v1/billing_portal/configurations',[
             'default_return_url'=>$base.'/account',
@@ -78,5 +82,5 @@ try{
     ]);
 }catch(Throwable $error){
     error_log('Stripe subscription setup failed: '.$error->getMessage());
-    json_error('STRIPE_SETUP_FAILED',substr($error->getMessage(),0,200),500);
+    json_error('STRIPE_SETUP_FAILED',substr(($stage??'unknown').': '.$error->getMessage(),0,500),500);
 }

@@ -25,8 +25,14 @@ function stripe_request(array $config, string $method, string $path, array $fiel
     if ($body === false || $curlError !== '') throw new RuntimeException('Stripe network error.');
     $decoded = json_decode($body, true);
     if (!is_array($decoded) || $status < 200 || $status >= 300) {
-        $type = is_array($decoded) ? ($decoded['error']['type'] ?? 'stripe_error') : 'invalid_response';
-        throw new RuntimeException('Stripe request failed: ' . $type);
+        $stripeError = is_array($decoded) && is_array($decoded['error'] ?? null) ? $decoded['error'] : [];
+        $details = array_filter([
+            $stripeError['type'] ?? 'invalid_response',
+            $stripeError['code'] ?? null,
+            $stripeError['param'] ?? null,
+            $stripeError['message'] ?? null,
+        ]);
+        throw new RuntimeException('Stripe request failed: ' . implode(' | ', array_map('strval', $details)));
     }
     return $decoded;
 }
