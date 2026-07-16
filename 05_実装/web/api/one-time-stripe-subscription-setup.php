@@ -66,7 +66,11 @@ try{
             'features[subscription_cancel][enabled]'=>'true',
             'features[subscription_cancel][mode]'=>'at_period_end',
             'features[subscription_cancel][proration_behavior]'=>'none',
-            'features[subscription_cancel][cancellation_reason][enabled]'=>'false',
+            'features[subscription_cancel][cancellation_reason][enabled]'=>'true',
+            'features[subscription_cancel][cancellation_reason][options][0]'=>'too_expensive',
+            'features[subscription_cancel][cancellation_reason][options][1]'=>'missing_features',
+            'features[subscription_cancel][cancellation_reason][options][2]'=>'unused',
+            'features[subscription_cancel][cancellation_reason][options][3]'=>'other',
             'features[subscription_update][enabled]'=>'false',
         ],'subscription-portal-v1');
     }
