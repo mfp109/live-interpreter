@@ -1,138 +1,404 @@
 <!doctype html>
 <html lang="ja">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src https://api.openai.com; script-src 'self'; style-src 'self'; media-src 'self' blob:; img-src 'self' data:">
-  <title>Live Interpreter</title>
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-  <main class="shell">
-    <header class="hero">
-      <div>
-        <h1 data-i18n="appTitle">Live Interpreter</h1>
-      </div>
-      <div class="status" id="statusBadge" data-state="idle"><i></i><span id="statusText" data-i18n="ready">待機中</span></div>
-    </header>
-
-    <section class="panel setup-grid">
-      <div>
-        <label for="outputMode" data-i18n="usageMethod">利用方法</label>
-        <select id="outputMode">
-          <option value="both" selected data-i18n="modeBoth">音声＋字幕</option>
-          <option value="audio" data-i18n="modeAudio">音声のみ</option>
-          <option value="captions" data-i18n="modeCaptions">字幕のみ</option>
-        </select>
-      </div>
-      <div>
-        <label for="inputLanguage" data-i18n="inputLanguage">入力言語</label>
-        <select id="inputLanguage"></select>
-      </div>
-      <div id="audioLanguageControl">
-        <label for="outputLanguage" data-i18n="interpreterLanguage">通訳言語</label>
-        <select id="outputLanguage"></select>
-      </div>
-      <div class="source-box">
-        <span data-i18n="selectedSource">選択中の音声元</span>
-        <strong id="sourceName" data-i18n="notSelected">未選択</strong>
-      </div>
-      <button id="selectSourceButton" class="secondary" data-i18n="chooseSource">音声元を選ぶ</button>
-    </section>
-
-    <section id="sourcePicker" class="panel source-picker mode-hidden">
-      <div class="source-picker-head">
-        <div><h2 data-i18n="chooseSource">音声元を選ぶ</h2><p data-i18n="sourcePickerNote">マイクまたは音声を取得するアプリを選択します。</p></div>
-        <button id="refreshSourcesButton" class="secondary" data-i18n="refresh">一覧を更新</button>
-        <button id="closeSourcesButton" class="icon-button" data-i18n="close">閉じる</button>
-      </div>
-      <div class="source-category"><h3 data-i18n="microphone">マイク</h3><div id="microphoneList" class="audio-app-list"><p data-i18n="checkingMicrophones">マイクを確認しています…</p></div></div>
-      <div class="source-category"><h3 data-i18n="applications">アプリ</h3><div id="audioAppList" class="audio-app-list"><p data-i18n="checkingApplications">アプリを確認しています…</p></div></div>
-      <div class="source-fallbacks">
-        <button id="selectMediaFileButton" class="secondary" data-i18n="chooseMedia">音声・動画ファイルを選ぶ</button>
-        <button id="selectWindowSourceButton" class="secondary" data-i18n="chooseWindow">画面・ウインドウから選ぶ</button>
-      </div>
-      <input id="mediaFileInput" type="file" accept="audio/*,video/*,.m4a,.mp3,.wav,.mp4,.mov,.mkv,.webm" hidden>
-    </section>
-
-    <section id="sourceMediaPanel" class="panel source-media-panel mode-hidden"><div><strong data-i18n="selectedMedia">選択した音声・動画</strong><span data-i18n="playbackHere">再生操作はここで行えます。</span></div><div id="sourceMediaContainer"></div></section>
-
-    <section id="audioControls" class="mixer" aria-label="音声ミキサー">
-      <article class="channel original">
-        <div class="channel-head"><span class="channel-tag">CH 1</span><h2 data-i18n="original">原音</h2><button id="originalMute" class="icon-button" aria-pressed="false" data-i18n="mute">ミュート</button></div>
-        <div class="meter"><span id="originalMeter"></span></div>
-        <label for="originalVolume"><span data-i18n="originalVolume">原音の音量</span> <output id="originalVolumeText">25%</output></label>
-        <input id="originalVolume" type="range" min="0" max="1" step="0.01" value="0.25">
-        <label for="originalOutput" data-i18n="outputDevice">出力先</label>
-        <select id="originalOutput"><option value="" data-i18n="defaultOutput">Macの標準出力</option></select>
-      </article>
-
-      <article class="channel translated">
-        <div class="channel-head"><span class="channel-tag">CH 2</span><h2 id="translatedChannelTitle">日本語通訳</h2><button id="translatedMute" class="icon-button" aria-pressed="false" data-i18n="mute">ミュート</button></div>
-        <div class="meter"><span id="translatedMeter"></span></div>
-        <label for="translatedVolume"><span data-i18n="interpreterVolume">通訳の音量</span> <output id="translatedVolumeText">100%</output></label>
-        <input id="translatedVolume" type="range" min="0" max="1" step="0.01" value="1">
-        <label for="translatedOutput" data-i18n="outputDevice">出力先</label>
-        <select id="translatedOutput"><option value="" data-i18n="defaultOutput">Macの標準出力</option></select>
-      </article>
-    </section>
-
-    <section id="captionControls" class="panel caption-controls">
-      <div class="caption-controls-head">
-        <div><h2 data-i18n="captionsWindow">字幕ウインドウ</h2><p data-i18n="captionNote">言語ごとに文字サイズと表示行数を設定できます。</p></div>
-        <div class="caption-window-options">
-          <label class="toggle"><input id="captionTransparent" type="checkbox"><span data-i18n="translucent">背景を半透明</span></label>
-          <label class="toggle"><input id="captionAlwaysOnTop" type="checkbox"><span data-i18n="alwaysOnTop">常に手前</span></label>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; connect-src https://api.openai.com; script-src 'self'; style-src 'self'; media-src 'self' blob:; img-src 'self' data:"
+    />
+    <title>Live Interpreter</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <div class="app-brand">
+          <span class="sonic-logo" aria-hidden="true"><i></i><i></i></span>
+          <div>
+            <p class="eyebrow">SHALOMWORKS / REALTIME VOICE INTELLIGENCE</p>
+            <h1 data-i18n="appTitle">Live Interpreter</h1>
+          </div>
         </div>
-        <div class="caption-window-actions">
-          <button id="openCaptionsButton" class="secondary" data-i18n="openCaptions">字幕ウインドウを開く</button>
-          <button id="closeCaptionsButton" class="secondary" data-i18n="closeCaptions">字幕ウインドウを閉じる</button>
-          <button id="exportCaptionsButton" class="secondary" data-i18n="exportTxt">字幕をTXT出力</button>
+        <div class="status" id="statusBadge" data-state="idle">
+          <i></i><span id="statusText" data-i18n="ready">待機中</span>
         </div>
-      </div>
-      <div class="caption-settings-grid">
-        <article>
-          <label for="captionLanguage1"><span data-i18n="captionLanguage1">字幕言語 1</span><select id="captionLanguage1"></select></label>
-          <label for="captionFontSize1"><span data-i18n="fontSize">文字サイズ</span> <output id="captionFontSizeText1">34px</output><input id="captionFontSize1" type="range" min="16" max="72" step="2" value="34"></label>
-          <label for="captionRows1"><span data-i18n="rows">表示行数</span><input id="captionRows1" type="number" min="1" max="12" step="1" value="2"></label>
+      </header>
+
+      <section class="panel setup-grid">
+        <div>
+          <label for="outputMode" data-i18n="usageMethod">利用方法</label>
+          <select id="outputMode">
+            <option value="both" selected data-i18n="modeBoth">
+              音声＋字幕
+            </option>
+            <option value="audio" data-i18n="modeAudio">音声のみ</option>
+            <option value="captions" data-i18n="modeCaptions">字幕のみ</option>
+          </select>
+        </div>
+        <div>
+          <label for="inputLanguage" data-i18n="inputLanguage">入力言語</label>
+          <select id="inputLanguage"></select>
+        </div>
+        <div id="audioLanguageControl">
+          <label for="outputLanguage" data-i18n="interpreterLanguage"
+            >通訳言語</label
+          >
+          <select id="outputLanguage"></select>
+        </div>
+        <div class="source-box">
+          <span data-i18n="selectedSource">選択中の音声元</span>
+          <strong id="sourceName" data-i18n="notSelected">未選択</strong>
+        </div>
+        <button
+          id="selectSourceButton"
+          class="secondary"
+          data-i18n="chooseSource"
+        >
+          音声元を選ぶ
+        </button>
+      </section>
+
+      <section id="sourcePicker" class="panel source-picker mode-hidden">
+        <div class="source-picker-head">
+          <div>
+            <h2 data-i18n="chooseSource">音声元を選ぶ</h2>
+            <p data-i18n="sourcePickerNote">
+              マイクまたは音声を取得するアプリを選択します。
+            </p>
+          </div>
+          <button
+            id="refreshSourcesButton"
+            class="secondary"
+            data-i18n="refresh"
+          >
+            一覧を更新
+          </button>
+          <button id="closeSourcesButton" class="icon-button" data-i18n="close">
+            閉じる
+          </button>
+        </div>
+        <div class="source-category">
+          <h3 data-i18n="microphone">マイク</h3>
+          <div id="microphoneList" class="audio-app-list">
+            <p data-i18n="checkingMicrophones">マイクを確認しています…</p>
+          </div>
+        </div>
+        <div class="source-category">
+          <h3 data-i18n="applications">アプリ</h3>
+          <div id="audioAppList" class="audio-app-list">
+            <p data-i18n="checkingApplications">アプリを確認しています…</p>
+          </div>
+        </div>
+        <div class="source-fallbacks">
+          <button
+            id="selectMediaFileButton"
+            class="secondary"
+            data-i18n="chooseMedia"
+          >
+            音声・動画ファイルを選ぶ
+          </button>
+          <button
+            id="selectWindowSourceButton"
+            class="secondary"
+            data-i18n="chooseWindow"
+          >
+            画面・ウインドウから選ぶ
+          </button>
+        </div>
+        <input
+          id="mediaFileInput"
+          type="file"
+          accept="audio/*,video/*,.m4a,.mp3,.wav,.mp4,.mov,.mkv,.webm"
+          hidden
+        />
+      </section>
+
+      <section
+        id="sourceMediaPanel"
+        class="panel source-media-panel mode-hidden"
+      >
+        <div>
+          <strong data-i18n="selectedMedia">選択した音声・動画</strong
+          ><span data-i18n="playbackHere">再生操作はここで行えます。</span>
+        </div>
+        <div id="sourceMediaContainer"></div>
+      </section>
+
+      <section id="audioControls" class="mixer" aria-label="音声ミキサー">
+        <article class="channel original">
+          <div class="channel-head">
+            <span class="channel-tag">CH 1</span>
+            <h2 data-i18n="original">原音</h2>
+            <button
+              id="originalMute"
+              class="icon-button"
+              aria-pressed="false"
+              data-i18n="mute"
+            >
+              ミュート
+            </button>
+          </div>
+          <div class="meter"><span id="originalMeter"></span></div>
+          <label for="originalVolume"
+            ><span data-i18n="originalVolume">原音の音量</span>
+            <output id="originalVolumeText">25%</output></label
+          >
+          <input
+            id="originalVolume"
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value="0.25"
+          />
+          <label for="originalOutput" data-i18n="outputDevice">出力先</label>
+          <select id="originalOutput">
+            <option value="" data-i18n="defaultOutput">Macの標準出力</option>
+          </select>
         </article>
-        <article>
-          <label for="captionLanguage2"><span data-i18n="captionLanguage2">字幕言語 2</span><select id="captionLanguage2"></select></label>
-          <label for="captionFontSize2"><span data-i18n="fontSize">文字サイズ</span> <output id="captionFontSizeText2">34px</output><input id="captionFontSize2" type="range" min="16" max="72" step="2" value="34"></label>
-          <label for="captionRows2"><span data-i18n="rows">表示行数</span><input id="captionRows2" type="number" min="1" max="12" step="1" value="5"></label>
+
+        <article class="channel translated">
+          <div class="channel-head">
+            <span class="channel-tag">CH 2</span>
+            <h2 id="translatedChannelTitle">日本語通訳</h2>
+            <button
+              id="translatedMute"
+              class="icon-button"
+              aria-pressed="false"
+              data-i18n="mute"
+            >
+              ミュート
+            </button>
+          </div>
+          <div class="meter"><span id="translatedMeter"></span></div>
+          <label for="translatedVolume"
+            ><span data-i18n="interpreterVolume">通訳の音量</span>
+            <output id="translatedVolumeText">100%</output></label
+          >
+          <input
+            id="translatedVolume"
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value="1"
+          />
+          <label for="translatedOutput" data-i18n="outputDevice">出力先</label>
+          <select id="translatedOutput">
+            <option value="" data-i18n="defaultOutput">Macの標準出力</option>
+          </select>
         </article>
-      </div>
-    </section>
+      </section>
 
-    <section id="captionPreview" class="captions-preview">
-      <article id="captionPreviewSection1"><small id="captionPreviewLabel1">字幕言語1</small><div id="captionPreview1" class="caption-scroll">字幕言語1がここに表示されます。</div></article>
-      <article id="captionPreviewSection2"><small id="captionPreviewLabel2">字幕言語2</small><div id="captionPreview2" class="caption-scroll">字幕言語2がここに表示されます。</div></article>
-    </section>
+      <section id="captionControls" class="panel caption-controls">
+        <div class="caption-controls-head">
+          <div>
+            <h2 data-i18n="captionsWindow">字幕ウインドウ</h2>
+            <p data-i18n="captionNote">
+              言語ごとに文字サイズと表示行数を設定できます。
+            </p>
+          </div>
+          <div class="caption-window-options">
+            <label class="toggle"
+              ><input id="captionTransparent" type="checkbox" /><span
+                data-i18n="translucent"
+                >背景を半透明</span
+              ></label
+            >
+            <label class="toggle"
+              ><input id="captionAlwaysOnTop" type="checkbox" /><span
+                data-i18n="alwaysOnTop"
+                >常に手前</span
+              ></label
+            >
+          </div>
+          <div class="caption-window-actions">
+            <button
+              id="openCaptionsButton"
+              class="secondary"
+              data-i18n="openCaptions"
+            >
+              字幕ウインドウを開く
+            </button>
+            <button
+              id="closeCaptionsButton"
+              class="secondary"
+              data-i18n="closeCaptions"
+            >
+              字幕ウインドウを閉じる
+            </button>
+            <button
+              id="exportCaptionsButton"
+              class="secondary"
+              data-i18n="exportTxt"
+            >
+              字幕をTXT出力
+            </button>
+          </div>
+        </div>
+        <div class="caption-settings-grid">
+          <article>
+            <label for="captionLanguage1"
+              ><span data-i18n="captionLanguage1">字幕言語 1</span
+              ><select id="captionLanguage1"></select
+            ></label>
+            <label for="captionFontSize1"
+              ><span data-i18n="fontSize">文字サイズ</span>
+              <output id="captionFontSizeText1">34px</output
+              ><input
+                id="captionFontSize1"
+                type="range"
+                min="16"
+                max="72"
+                step="2"
+                value="34"
+            /></label>
+            <label for="captionRows1"
+              ><span data-i18n="rows">表示行数</span
+              ><input
+                id="captionRows1"
+                type="number"
+                min="1"
+                max="12"
+                step="1"
+                value="2"
+            /></label>
+          </article>
+          <article>
+            <label for="captionLanguage2"
+              ><span data-i18n="captionLanguage2">字幕言語 2</span
+              ><select id="captionLanguage2"></select
+            ></label>
+            <label for="captionFontSize2"
+              ><span data-i18n="fontSize">文字サイズ</span>
+              <output id="captionFontSizeText2">34px</output
+              ><input
+                id="captionFontSize2"
+                type="range"
+                min="16"
+                max="72"
+                step="2"
+                value="34"
+            /></label>
+            <label for="captionRows2"
+              ><span data-i18n="rows">表示行数</span
+              ><input
+                id="captionRows2"
+                type="number"
+                min="1"
+                max="12"
+                step="1"
+                value="5"
+            /></label>
+          </article>
+        </div>
+      </section>
 
-    <section class="panel usage-panel" aria-label="使用量と料金">
-      <div><h2 data-i18n="usageTitle">使用量と推定料金</h2><p data-i18n="usageCostNote">翻訳 $0.034／分、原語字幕の文字起こし $0.017／分で計算</p></div>
-      <dl><div><dt data-i18n="sessionTime">今回の時間</dt><dd id="sessionTime">00:00</dd></div><div><dt data-i18n="translationSessions">翻訳セッション</dt><dd id="sessionCount">0本</dd></div><div><dt data-i18n="sessionEstimate">今回の推定</dt><dd id="sessionCost">$0.0000</dd></div><div><dt data-i18n="monthlyEstimate">今月の推定</dt><dd id="monthlyCost">$0.0000</dd></div></dl>
-      <p id="usageNote" data-i18n="usageNote">翻訳字幕を音声通訳と別の言語にすると、追加セッション分の料金がかかります。</p>
-    </section>
+      <section id="captionPreview" class="captions-preview">
+        <article id="captionPreviewSection1">
+          <small id="captionPreviewLabel1">字幕言語1</small>
+          <div id="captionPreview1" class="caption-scroll">
+            字幕言語1がここに表示されます。
+          </div>
+        </article>
+        <article id="captionPreviewSection2">
+          <small id="captionPreviewLabel2">字幕言語2</small>
+          <div id="captionPreview2" class="caption-scroll">
+            字幕言語2がここに表示されます。
+          </div>
+        </article>
+      </section>
 
-    <section class="transport">
-      <button id="startButton" class="primary" data-i18n="start">通訳を開始</button>
-      <button id="stopButton" class="danger" disabled data-i18n="stop">終了</button>
-      <p id="message" role="status" data-i18n="initialMessage">最初に会議・画面音声を選んでください。</p>
-    </section>
-  </main>
+      <section class="panel usage-panel" aria-label="使用量と料金">
+        <div>
+          <h2 data-i18n="usageTitle">使用量と推定料金</h2>
+          <p data-i18n="usageCostNote">
+            翻訳 $0.034／分、原語字幕の文字起こし $0.017／分で計算
+          </p>
+        </div>
+        <dl>
+          <div>
+            <dt data-i18n="sessionTime">今回の時間</dt>
+            <dd id="sessionTime">00:00</dd>
+          </div>
+          <div>
+            <dt data-i18n="translationSessions">翻訳セッション</dt>
+            <dd id="sessionCount">0本</dd>
+          </div>
+          <div>
+            <dt data-i18n="sessionEstimate">今回の推定</dt>
+            <dd id="sessionCost">$0.0000</dd>
+          </div>
+          <div>
+            <dt data-i18n="monthlyEstimate">今月の推定</dt>
+            <dd id="monthlyCost">$0.0000</dd>
+          </div>
+        </dl>
+        <p id="usageNote" data-i18n="usageNote">
+          翻訳字幕を音声通訳と別の言語にすると、追加セッション分の料金がかかります。
+        </p>
+      </section>
 
-  <dialog id="exportDialog" class="export-dialog">
-    <form method="dialog">
-      <h2 data-i18n="exportTxt">字幕をTXT出力</h2>
-      <label for="exportScope"><span data-i18n="exportScope">出力する字幕</span><select id="exportScope"><option value="language1" data-i18n="language1Only">言語1のみ</option><option value="language2" data-i18n="language2Only">言語2のみ</option><option value="both" selected data-i18n="bothLanguages">言語1・2の両方</option></select></label>
-      <label id="exportLayoutControl" for="exportLayout"><span data-i18n="exportLayout">両方の並べ方</span><select id="exportLayout"><option value="interleaved" selected data-i18n="interleaved">一文ずつ言語1・2を交互に並べる</option><option value="grouped" data-i18n="grouped">言語1全文の後に言語2全文を並べる</option></select></label>
-      <div class="dialog-actions"><button value="cancel" class="secondary" data-i18n="cancel">キャンセル</button><button id="saveTranscriptButton" value="default" type="button" class="primary" data-i18n="chooseSave">保存先を選ぶ</button></div>
-    </form>
-  </dialog>
+      <section class="transport">
+        <button id="startButton" class="primary" data-i18n="start">
+          通訳を開始
+        </button>
+        <button id="stopButton" class="danger" disabled data-i18n="stop">
+          終了
+        </button>
+        <p id="message" role="status" data-i18n="initialMessage">
+          最初に会議・画面音声を選んでください。
+        </p>
+      </section>
+    </main>
 
-  <audio id="originalAudio" autoplay></audio>
-  <audio id="translatedAudio" autoplay></audio>
-  <script type="module" src="app.js"></script>
-</body>
+    <dialog id="exportDialog" class="export-dialog">
+      <form method="dialog">
+        <h2 data-i18n="exportTxt">字幕をTXT出力</h2>
+        <label for="exportScope"
+          ><span data-i18n="exportScope">出力する字幕</span
+          ><select id="exportScope">
+            <option value="language1" data-i18n="language1Only">
+              言語1のみ
+            </option>
+            <option value="language2" data-i18n="language2Only">
+              言語2のみ
+            </option>
+            <option value="both" selected data-i18n="bothLanguages">
+              言語1・2の両方
+            </option>
+          </select></label
+        >
+        <label id="exportLayoutControl" for="exportLayout"
+          ><span data-i18n="exportLayout">両方の並べ方</span
+          ><select id="exportLayout">
+            <option value="interleaved" selected data-i18n="interleaved">
+              一文ずつ言語1・2を交互に並べる
+            </option>
+            <option value="grouped" data-i18n="grouped">
+              言語1全文の後に言語2全文を並べる
+            </option>
+          </select></label
+        >
+        <div class="dialog-actions">
+          <button value="cancel" class="secondary" data-i18n="cancel">
+            キャンセル</button
+          ><button
+            id="saveTranscriptButton"
+            value="default"
+            type="button"
+            class="primary"
+            data-i18n="chooseSave"
+          >
+            保存先を選ぶ
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <audio id="originalAudio" autoplay></audio>
+    <audio id="translatedAudio" autoplay></audio>
+    <script type="module" src="app.js"></script>
+  </body>
 </html>

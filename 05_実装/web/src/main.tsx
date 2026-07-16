@@ -5,6 +5,7 @@ import "./styles.css";
 import "./app.css";
 import "./admin.css";
 import "./account.css";
+import "./sonic.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

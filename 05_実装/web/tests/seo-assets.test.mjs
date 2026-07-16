@@ -33,3 +33,33 @@ test("crawler files point to the production site", async () => {
   assert.match(sitemap, /hreflang="en"/);
   assert.match(sitemap, /hreflang="zh-Hans"/);
 });
+
+test("Sonic Glass branding and account translations ship with the web app", async () => {
+  const [app, entry, account] = await Promise.all([
+    readFile(new URL("src/App.tsx", root), "utf8"),
+    readFile(new URL("src/main.tsx", root), "utf8"),
+    readFile(new URL("src/AccountTools.tsx", root), "utf8"),
+  ]);
+  assert.match(app, /className="sonic-logo"/);
+  assert.match(app, /className="hero-caption-grid"/);
+  assert.match(entry, /import "\.\/sonic\.css"/);
+  for (const code of [
+    "ja",
+    "en",
+    "zh-CN",
+    "es",
+    "pt",
+    "fr",
+    "de",
+    "ru",
+    "ko",
+    "hi",
+    "id",
+    "vi",
+    "it",
+  ])
+    assert.match(
+      account,
+      new RegExp(`(?:^|\\n)\\s*(?:"${code}"|${code}): \\{`),
+    );
+});

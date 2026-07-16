@@ -1,6 +1,5 @@
 import {
   ArrowRight,
-  AudioLines,
   Check,
   Globe2,
   Headphones,
@@ -9,14 +8,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import {
-  api,
-  formatCredits,
-  Product,
-  Subscription,
-  User,
-  Wallet,
-} from "./api";
+import { api, formatCredits, Product, Subscription, User, Wallet } from "./api";
 import { AuthDialog } from "./AuthDialog";
 import { Interpreter } from "./Interpreter";
 import { AdminPanel } from "./AdminPanel";
@@ -342,7 +334,9 @@ function initialLocale(): Locale {
   const saved = localStorage.getItem("swli.locale");
   if (isLocale(saved)) return saved;
   const browser = navigator.language.toLowerCase();
-  const matched = localeOptions.find(([code]) => browser.startsWith(code.toLowerCase().split("-")[0]));
+  const matched = localeOptions.find(([code]) =>
+    browser.startsWith(code.toLowerCase().split("-")[0]),
+  );
   return matched?.[0] || "ja";
 }
 
@@ -368,7 +362,8 @@ export function App() {
   const heroLines = useMemo(() => t.hero.split("\n"), [t.hero]);
   useEffect(() => {
     localStorage.setItem("swli.locale", locale);
-    const metadata = pageMetadata[locale as keyof typeof pageMetadata] ?? pageMetadata.en;
+    const metadata =
+      pageMetadata[locale as keyof typeof pageMetadata] ?? pageMetadata.en;
     document.documentElement.lang = metadata.lang;
     document.title = metadata.title;
     setMetaContent('meta[name="description"]', metadata.description);
@@ -505,11 +500,13 @@ export function App() {
       <div className="site">
         <header>
           <a className="brand" href="/">
-            <span className="brand-mark">
-              <AudioLines size={22} />
+            <span className="sonic-logo" aria-hidden="true">
+              <i />
+              <i />
             </span>
-            <span>
-              ShalomWorks <b>Live Interpreter</b>
+            <span className="brand-copy">
+              <b>Live Interpreter</b>
+              <small>by ShalomWorks</small>
             </span>
           </a>
         </header>
@@ -522,13 +519,16 @@ export function App() {
     );
   return (
     <div className="site">
+      <div className="sonic-beam" aria-hidden="true" />
       <header>
         <button className="brand brand-button" onClick={() => setView("home")}>
-          <span className="brand-mark">
-            <AudioLines size={22} />
+          <span className="sonic-logo" aria-hidden="true">
+            <i />
+            <i />
           </span>
-          <span>
-            ShalomWorks <b>Live Interpreter</b>
+          <span className="brand-copy">
+            <b>Live Interpreter</b>
+            <small>by ShalomWorks</small>
           </span>
         </button>
         <nav>
@@ -550,7 +550,9 @@ export function App() {
               onChange={(e) => setLocale(e.target.value as Locale)}
             >
               {localeOptions.map(([code, label]) => (
-                <option value={code} key={code}>{label}</option>
+                <option value={code} key={code}>
+                  {label}
+                </option>
               ))}
             </select>
           </label>
@@ -576,7 +578,7 @@ export function App() {
           <section className="account-summary">
             <div>
               <p className="section-kicker">
-                {user.role === "admin" ? "ADMINISTRATOR" : "MY ACCOUNT"}
+                {user.role === "admin" ? "ADMINISTRATOR" : t.account}
               </p>
               <h1>
                 {t.greeting}
@@ -620,7 +622,8 @@ export function App() {
                 }
               />
               <section className="account-products">
-                <h2>{t.addTime}</h2>
+                <p className="section-kicker">CREDIT STATION</p>
+                <h2>{subscription ? t.topupHeading : t.subscriptionHeading}</h2>
                 <ProductCards
                   products={products.filter((product) =>
                     subscription
@@ -696,10 +699,13 @@ export function App() {
             </div>
             <div className="interpreter-card">
               <div className="card-top">
+                <span className="panel-brand">
+                  SHALOMWORKS / LIVE INTERPRETER
+                </span>
                 <div>
-                  <span className="live-dot" /> LIVE INTERPRETER
+                  <span className="live-dot" /> LIVE SESSION
                 </div>
-                <span className="balance">1:00 FREE</span>
+                <span className="balance">00:01:24</span>
               </div>
               <h2>{t.card}</h2>
               <div className="language-row">
@@ -722,16 +728,50 @@ export function App() {
                 </label>
               </div>
               <div className="wave" aria-label="microphone level">
-                {Array.from({ length: 28 }, (_, i) => (
-                  <i key={i} style={{ height: `${16 + ((i * 17) % 48)}px` }} />
+                <span className="wave-scan" aria-hidden="true" />
+                <span className="wave-radar" aria-hidden="true" />
+                {Array.from({ length: 48 }, (_, i) => (
+                  <i
+                    key={i}
+                    style={{
+                      height: `${14 + ((i * 23) % 62)}px`,
+                      animationDelay: `${-(i % 13) * 0.08}s`,
+                      animationDuration: `${0.65 + (i % 7) * 0.09}s`,
+                    }}
+                  />
                 ))}
+                <small>VOICE INPUT / NEURAL STREAM</small>
+              </div>
+              <div className="hero-caption-grid">
+                <article>
+                  <small>ORIGINAL / JA</small>
+                  <p>私たちは、言葉を越えてもっと深くつながれる。</p>
+                </article>
+                <article>
+                  <small>INTERPRETATION / EN</small>
+                  <p>
+                    Beyond language, we can connect more deeply.
+                    <i />
+                  </p>
+                </article>
+              </div>
+              <div className="hero-telemetry" aria-hidden="true">
+                <span>
+                  LATENCY <b>0.4s</b>
+                </span>
+                <span>
+                  CONTEXT <b>ACTIVE</b>
+                </span>
+                <span>
+                  SIGNAL <b>98.7%</b>
+                </span>
               </div>
               <button className="start" onClick={() => setAuth("register")}>
                 <span className="mic">●</span>
                 {t.start}
               </button>
               <p>
-                <Headphones size={15} /> Headphones recommended
+                <Headphones size={15} /> {t.notice}
               </p>
             </div>
           </section>
