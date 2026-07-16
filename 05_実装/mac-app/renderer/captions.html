@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'">
+  <title>共有用字幕｜Live Interpreter</title>
+  <link rel="stylesheet" href="captions.css">
+</head>
+<body>
+  <div class="drag-handle" title="ここをドラッグして移動" data-i18n="dragCaptions">共有用字幕｜ドラッグして移動</div>
+  <main id="captionSurface">
+    <section id="captionLine1"><small id="language1"></small><div id="text1" class="caption-scroll">発話を待っています。</div></section>
+    <section id="captionLine2"><small id="language2"></small><div id="text2" class="caption-scroll">字幕がここに表示されます。</div></section>
+  </main>
+  <script src="captions.js"></script>
+</body>
+</html>
