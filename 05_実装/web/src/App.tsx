@@ -17,6 +17,7 @@ import { ResetPassword } from "./ResetPassword";
 import { AccountTools } from "./AccountTools";
 import { isLocale, Locale, localeOptions } from "./locales";
 import { siteCopyExtra } from "./site-copy-extra";
+import { UniversalDemo } from "./UniversalDemo";
 
 type View = "home" | "account";
 const copy = {
@@ -47,10 +48,13 @@ const copy = {
     paid: "有料",
     addTime: "クレジットを追加",
     logout: "ログアウト",
-    demoPlaceholder: "日本語→英語の音声付きデモ",
-    demoTitle: "話し続けても、通訳は止まりません。",
+    demoPlaceholder: "ひとつの声が、世界へ届くまで",
+    demoTitle: "声が、光になって世界へ広がる。",
     demoText:
-      "日本語の話し声が英語音声として届く利用イメージを、音声付きの短いデモで確認できます。",
+      "言語を選ばない短いビジュアルストーリーです。話した声が通訳され、離れた場所の人々へ同時に届く瞬間を表現しています。",
+    demoVisualLabel:
+      "さまざまな言語の声が通訳され、世界中の聞き手へ光として届くアニメーション",
+    demoSound: "サウンドを聴く",
     speakTitle: "話す",
     speakText: "マイクと入力言語を選び、自然に話します。",
     interpretTitle: "通訳",
@@ -112,10 +116,13 @@ const copy = {
     paid: "Paid",
     addTime: "Add credits",
     logout: "Sign out",
-    demoPlaceholder: "Japanese-to-English audio demo",
-    demoTitle: "Keep speaking. Interpretation keeps moving.",
+    demoPlaceholder: "One voice, reaching the world",
+    demoTitle: "A voice becomes light—and travels worldwide.",
     demoText:
-      "Watch and hear a short demonstration of Japanese speech reaching listeners as English audio.",
+      "A language-neutral visual story of one voice being interpreted and reaching people everywhere at the same moment.",
+    demoVisualLabel:
+      "Animation of voices in many languages becoming light and reaching listeners around the world",
+    demoSound: "Play the sound",
     speakTitle: "Speak",
     speakText:
       "Choose your microphone and input language, then speak naturally.",
@@ -179,9 +186,12 @@ const copy = {
     paid: "已购买",
     addTime: "追加积分",
     logout: "退出登录",
-    demoPlaceholder: "日语转英语音频演示",
-    demoTitle: "持续说话，口译不会停止。",
-    demoText: "通过带声音的短片，了解日语语音转换为英语语音的使用方式。",
+    demoPlaceholder: "一个声音，传向世界",
+    demoTitle: "声音化作光，传向世界。",
+    demoText:
+      "这是一段不依赖特定语言的视觉故事，呈现声音经过口译后同时传达给世界各地的人们。",
+    demoVisualLabel: "多种语言的声音化作光，经口译后传向世界各地听众的动画",
+    demoSound: "播放声音",
     speakTitle: "说话",
     speakText: "选择麦克风和输入语言，然后自然说话。",
     interpretTitle: "口译",
@@ -784,14 +794,10 @@ export function App() {
           </section>
           <section id="demo" className="demo-section">
             <div className="demo-video-wrap">
-              <video
-                className="demo-video"
-                controls
-                playsInline
-                preload="metadata"
-              >
-                <source src="/media/live-demo.mp4" type="video/mp4" />
-              </video>
+              <UniversalDemo
+                label={t.demoVisualLabel}
+                soundLabel={t.demoSound}
+              />
               <span>{t.demoPlaceholder}</span>
             </div>
             <div>

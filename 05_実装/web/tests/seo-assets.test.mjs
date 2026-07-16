@@ -63,3 +63,32 @@ test("Sonic Glass branding and account translations ship with the web app", asyn
       new RegExp(`(?:^|\\n)\\s*(?:"${code}"|${code}): \\{`),
     );
 });
+
+test("homepage demo is language-neutral and localized in every site language", async () => {
+  const [app, demo, extra] = await Promise.all([
+    readFile(new URL("src/App.tsx", root), "utf8"),
+    readFile(new URL("src/UniversalDemo.tsx", root), "utf8"),
+    readFile(new URL("src/site-copy-extra.ts", root), "utf8"),
+  ]);
+  assert.doesNotMatch(app, /live-demo\.mp4/);
+  assert.match(app, /<UniversalDemo/);
+  assert.match(demo, /\["あ", "A", "文", "한", "अ", "Ñ", "ع"\]/);
+  assert.match(demo, /playSonicLogo/);
+  for (const code of [
+    "es",
+    "pt",
+    "fr",
+    "de",
+    "ru",
+    "ko",
+    "hi",
+    "id",
+    "vi",
+    "it",
+  ]) {
+    assert.match(
+      extra,
+      new RegExp(`(?:^|\\n)\\s*${code}: \\{[\\s\\S]*?demoVisualLabel:`),
+    );
+  }
+});
