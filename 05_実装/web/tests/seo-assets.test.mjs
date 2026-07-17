@@ -92,7 +92,21 @@ test("homepage demo is language-neutral and localized in every site language", a
   ]) {
     assert.match(
       extra,
-      new RegExp(`(?:^|\\n)\\s*${code}: \\{[\\s\\S]*?demoVisualLabel:`),
+      new RegExp(
+        `(?:^|\\n)\\s*${code}: \\{[\\s\\S]*?demoVisualLabel:[\\s\\S]*?visionText:`,
+      ),
     );
   }
+});
+
+test("homepage carries the global vision campaign", async () => {
+  const [app, image] = await Promise.all([
+    readFile(new URL("src/App.tsx", root), "utf8"),
+    readFile(new URL("public/media/every-voice-world.webp", root)),
+  ]);
+  assert.match(app, /EVERY VOICE/);
+  assert.match(app, /EVERY LANGUAGE/);
+  assert.match(app, /ONE WORLD/);
+  assert.match(app, /every-voice-world\.webp/);
+  assert.ok(image.byteLength > 100_000);
 });

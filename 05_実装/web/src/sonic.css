@@ -307,6 +307,167 @@ nav a:hover {
   color: var(--sonic-mint);
 }
 
+.world-vision {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  min-height: clamp(620px, 62vw, 840px);
+  overflow: hidden;
+  border-block: 1px solid rgba(143, 255, 216, 0.16);
+  background: #020706;
+  isolation: isolate;
+}
+.world-vision > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  filter: saturate(1.04) contrast(1.04);
+  animation: world-vision-breathe 18s ease-in-out infinite alternate;
+}
+.world-vision-shade {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(2, 7, 6, 0.1),
+      transparent 38%,
+      rgba(2, 7, 6, 0.92) 100%
+    ),
+    radial-gradient(ellipse at 50% 76%, rgba(2, 7, 6, 0.78), transparent 54%),
+    linear-gradient(
+      90deg,
+      rgba(2, 7, 6, 0.32),
+      transparent 24%,
+      transparent 76%,
+      rgba(2, 7, 6, 0.3)
+    );
+}
+.world-vision-copy {
+  position: absolute;
+  right: 5%;
+  bottom: 7%;
+  left: 5%;
+  z-index: 3;
+  display: grid;
+  justify-items: center;
+  text-align: center;
+}
+.world-vision h2 {
+  display: grid;
+  margin: 0;
+  color: white;
+  font-family: inherit;
+  font-size: clamp(58px, 7.3vw, 118px);
+  font-weight: 680;
+  line-height: 0.84;
+  letter-spacing: -0.065em;
+  text-shadow:
+    0 3px 32px rgba(0, 0, 0, 0.72),
+    0 0 50px rgba(143, 255, 216, 0.12);
+}
+.world-vision h2 span {
+  display: block;
+  animation: world-words-rise 9s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+.world-vision h2 span:nth-child(2) {
+  color: #cffff0;
+  animation-delay: 0.12s;
+}
+.world-vision h2 span:nth-child(3) {
+  background: linear-gradient(90deg, #8fffd8 18%, #f4fff9 50%, #ffc47a 82%);
+  background-clip: text;
+  color: transparent;
+  animation-delay: 0.24s;
+}
+.world-vision-copy p {
+  max-width: 760px;
+  margin: 30px 0 0;
+  color: rgba(239, 255, 249, 0.84);
+  font-size: clamp(15px, 1.35vw, 20px);
+  line-height: 1.8;
+  letter-spacing: 0.04em;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.88);
+}
+.world-vision-signal {
+  position: absolute;
+  top: 45%;
+  left: 0;
+  z-index: 2;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(143, 255, 216, 0.45) 32%,
+    rgba(255, 196, 122, 0.55) 68%,
+    transparent
+  );
+  box-shadow: 0 0 24px rgba(143, 255, 216, 0.16);
+}
+.world-vision-signal i {
+  position: absolute;
+  top: 50%;
+  left: -2%;
+  width: 8px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: white;
+  box-shadow:
+    0 0 10px #8fffd8,
+    0 0 28px rgba(143, 255, 216, 0.82);
+  translate: 0 -50%;
+  animation: world-signal-travel 5.6s linear infinite;
+  animation-delay: calc(var(--vision-index) * -0.62s);
+}
+
+@keyframes world-vision-breathe {
+  from {
+    scale: 1.015;
+  }
+  to {
+    scale: 1.075;
+  }
+}
+@keyframes world-words-rise {
+  0%,
+  9% {
+    opacity: 0;
+    translate: 0 34px;
+    filter: blur(7px);
+  }
+  20%,
+  82% {
+    opacity: 1;
+    translate: 0 0;
+    filter: blur(0);
+  }
+  94%,
+  100% {
+    opacity: 0;
+    translate: 0 -12px;
+    filter: blur(3px);
+  }
+}
+@keyframes world-signal-travel {
+  0% {
+    left: -2%;
+    opacity: 0;
+  }
+  8%,
+  92% {
+    opacity: 1;
+  }
+  100% {
+    left: 102%;
+    opacity: 0;
+  }
+}
+
 .interpreter-card {
   position: relative;
   width: min(770px, 100%);
@@ -1529,6 +1690,39 @@ footer a {
   }
   .lead {
     font-size: 15px;
+  }
+  .world-vision {
+    min-height: 690px;
+  }
+  .world-vision > img {
+    object-position: 52% center;
+  }
+  .world-vision-shade {
+    background:
+      linear-gradient(
+        180deg,
+        rgba(2, 7, 6, 0.06),
+        transparent 24%,
+        rgba(2, 7, 6, 0.96) 82%
+      ),
+      radial-gradient(ellipse at 50% 74%, rgba(2, 7, 6, 0.84), transparent 62%);
+  }
+  .world-vision-copy {
+    right: 20px;
+    bottom: 42px;
+    left: 20px;
+  }
+  .world-vision h2 {
+    font-size: clamp(45px, 13vw, 58px);
+    line-height: 0.9;
+    letter-spacing: -0.055em;
+  }
+  .world-vision-copy p {
+    margin-top: 24px;
+    font-size: 14px;
+  }
+  .world-vision-signal {
+    top: 39%;
   }
   .hero-actions {
     align-items: stretch;

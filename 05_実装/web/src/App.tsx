@@ -8,6 +8,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import type { CSSProperties } from "react";
 import { api, formatCredits, Product, Subscription, User, Wallet } from "./api";
 import { AuthDialog } from "./AuthDialog";
 import { Interpreter } from "./Interpreter";
@@ -55,6 +56,8 @@ const copy = {
     demoVisualLabel:
       "さまざまな言語の声が通訳され、世界中の聞き手へ光として届くアニメーション",
     demoSound: "サウンドを聴く",
+    visionText:
+      "声が違っても、心はつながれる。言葉の壁を越え、誰もが理解される世界へ。",
     speakTitle: "話す",
     speakText: "マイクと入力言語を選び、自然に話します。",
     interpretTitle: "通訳",
@@ -123,6 +126,8 @@ const copy = {
     demoVisualLabel:
       "Animation of voices in many languages becoming light and reaching listeners around the world",
     demoSound: "Play the sound",
+    visionText:
+      "Different voices. Shared humanity. A future where everyone can be understood.",
     speakTitle: "Speak",
     speakText:
       "Choose your microphone and input language, then speak naturally.",
@@ -192,6 +197,8 @@ const copy = {
       "这是一段不依赖特定语言的视觉故事，呈现声音经过口译后同时传达给世界各地的人们。",
     demoVisualLabel: "多种语言的声音化作光，经口译后传向世界各地听众的动画",
     demoSound: "播放声音",
+    visionText:
+      "声音虽不同，心却可以相连。跨越语言的障碍，走向每个人都能被理解的世界。",
     speakTitle: "说话",
     speakText: "选择麦克风和输入语言，然后自然说话。",
     interpretTitle: "口译",
@@ -783,6 +790,35 @@ export function App() {
               <p>
                 <Headphones size={15} /> {t.notice}
               </p>
+            </div>
+          </section>
+          <section
+            className="world-vision"
+            aria-label="Every voice, every language, one world"
+          >
+            <img
+              src="/media/every-voice-world.webp"
+              alt=""
+              width="1920"
+              height="1080"
+              loading="eager"
+            />
+            <div className="world-vision-shade" aria-hidden="true" />
+            <div className="world-vision-signal" aria-hidden="true">
+              {Array.from({ length: 9 }, (_, index) => (
+                <i
+                  key={index}
+                  style={{ "--vision-index": index } as CSSProperties}
+                />
+              ))}
+            </div>
+            <div className="world-vision-copy">
+              <h2>
+                <span>EVERY VOICE</span>
+                <span>EVERY LANGUAGE</span>
+                <span>ONE WORLD</span>
+              </h2>
+              <p>{t.visionText}</p>
             </div>
           </section>
           <section className="trust">

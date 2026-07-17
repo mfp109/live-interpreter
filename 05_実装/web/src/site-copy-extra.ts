@@ -19,6 +19,8 @@ export const siteCopyExtra: Partial<Record<Locale, Record<string, string>>> = {
     demoVisualLabel:
       "Animación de voces en muchos idiomas que se convierten en luz y llegan a oyentes de todo el mundo",
     demoSound: "Reproducir sonido",
+    visionText:
+      "Voces diferentes, una misma humanidad. Un futuro donde todas las personas puedan ser comprendidas.",
     trial: "1 minuto gratis tras registrarte",
     card: "Interpreta ahora en el navegador",
     from: "Idioma de entrada",
@@ -55,6 +57,8 @@ export const siteCopyExtra: Partial<Record<Locale, Record<string, string>>> = {
     demoVisualLabel:
       "Animação de vozes em vários idiomas virando luz e chegando a ouvintes no mundo todo",
     demoSound: "Ouvir o som",
+    visionText:
+      "Vozes diferentes, a mesma humanidade. Um futuro em que todas as pessoas possam ser compreendidas.",
     trial: "1 minuto grátis após o cadastro",
     card: "Interpretar agora no navegador",
     from: "Idioma de entrada",
@@ -91,6 +95,8 @@ export const siteCopyExtra: Partial<Record<Locale, Record<string, string>>> = {
     demoVisualLabel:
       "Animation de voix de plusieurs langues devenant lumière et atteignant des auditeurs partout dans le monde",
     demoSound: "Écouter le son",
+    visionText:
+      "Des voix différentes, une même humanité. Un avenir où chaque personne peut être comprise.",
     trial: "1 minute gratuite après inscription",
     card: "Interprétez dans votre navigateur",
     from: "Langue d’entrée",
@@ -127,6 +133,8 @@ export const siteCopyExtra: Partial<Record<Locale, Record<string, string>>> = {
     demoVisualLabel:
       "Animation, in der Stimmen vieler Sprachen zu Licht werden und Menschen auf der ganzen Welt erreichen",
     demoSound: "Klang abspielen",
+    visionText:
+      "Verschiedene Stimmen, eine gemeinsame Menschlichkeit. Eine Zukunft, in der alle verstanden werden.",
     trial: "1 kostenlose Minute nach Registrierung",
     card: "Jetzt im Browser dolmetschen",
     from: "Eingabesprache",
@@ -163,6 +171,8 @@ export const siteCopyExtra: Partial<Record<Locale, Record<string, string>>> = {
     demoVisualLabel:
       "Анимация, где голоса на разных языках становятся светом и достигают слушателей по всему миру",
     demoSound: "Включить звук",
+    visionText:
+      "Разные голоса, единое человечество. Будущее, в котором каждого могут понять.",
     trial: "1 бесплатная минута после регистрации",
     card: "Переводите прямо в браузере",
     from: "Язык ввода",
@@ -199,6 +209,8 @@ export const siteCopyExtra: Partial<Record<Locale, Record<string, string>>> = {
     demoVisualLabel:
       "여러 언어의 목소리가 빛이 되어 전 세계 청중에게 전달되는 애니메이션",
     demoSound: "사운드 듣기",
+    visionText:
+      "서로 다른 목소리, 하나의 인류. 누구나 이해받을 수 있는 미래를 향해.",
     trial: "가입 후 1분 무료",
     card: "브라우저에서 바로 통역",
     from: "입력 언어",
@@ -235,6 +247,8 @@ export const siteCopyExtra: Partial<Record<Locale, Record<string, string>>> = {
     demoVisualLabel:
       "कई भाषाओं की आवाज़ों के रोशनी बनकर दुनिया भर के श्रोताओं तक पहुँचने का एनिमेशन",
     demoSound: "ध्वनि चलाएँ",
+    visionText:
+      "अलग आवाज़ें, साझा मानवता। एक ऐसा भविष्य जहाँ हर व्यक्ति को समझा जा सके।",
     trial: "पंजीकरण के बाद 1 मिनट निःशुल्क",
     card: "ब्राउज़र में अभी अनुवाद करें",
     from: "इनपुट भाषा",
@@ -271,6 +285,8 @@ export const siteCopyExtra: Partial<Record<Locale, Record<string, string>>> = {
     demoVisualLabel:
       "Animasi suara berbagai bahasa menjadi cahaya dan mencapai pendengar di seluruh dunia",
     demoSound: "Putar suara",
+    visionText:
+      "Suara yang berbeda, kemanusiaan yang sama. Masa depan ketika setiap orang dapat dipahami.",
     trial: "Gratis 1 menit setelah mendaftar",
     card: "Interpretasi sekarang di browser",
     from: "Bahasa masukan",
@@ -307,6 +323,8 @@ export const siteCopyExtra: Partial<Record<Locale, Record<string, string>>> = {
     demoVisualLabel:
       "Hoạt ảnh các giọng nói đa ngôn ngữ hóa thành ánh sáng và đến với người nghe khắp thế giới",
     demoSound: "Phát âm thanh",
+    visionText:
+      "Những tiếng nói khác nhau, một nhân loại chung. Một tương lai nơi mọi người đều được thấu hiểu.",
     trial: "Miễn phí 1 phút sau khi đăng ký",
     card: "Phiên dịch ngay trong trình duyệt",
     from: "Ngôn ngữ đầu vào",
@@ -343,6 +361,8 @@ export const siteCopyExtra: Partial<Record<Locale, Record<string, string>>> = {
     demoVisualLabel:
       "Animazione di voci in molte lingue che diventano luce e raggiungono ascoltatori in tutto il mondo",
     demoSound: "Riproduci il suono",
+    visionText:
+      "Voci diverse, la stessa umanità. Un futuro in cui ogni persona possa essere compresa.",
     trial: "1 minuto gratis dopo la registrazione",
     card: "Interpreta ora nel browser",
     from: "Lingua di input",
