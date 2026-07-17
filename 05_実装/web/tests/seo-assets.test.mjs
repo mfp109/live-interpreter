@@ -35,14 +35,18 @@ test("crawler files point to the production site", async () => {
 });
 
 test("Sonic Glass branding and account translations ship with the web app", async () => {
-  const [app, entry, account] = await Promise.all([
+  const [app, entry, account, theme] = await Promise.all([
     readFile(new URL("src/App.tsx", root), "utf8"),
     readFile(new URL("src/main.tsx", root), "utf8"),
     readFile(new URL("src/AccountTools.tsx", root), "utf8"),
+    readFile(new URL("src/sonic.css", root), "utf8"),
   ]);
   assert.match(app, /className="sonic-logo"/);
   assert.match(app, /className="hero-caption-grid"/);
   assert.match(entry, /import "\.\/sonic\.css"/);
+  assert.match(theme, /\.admin-panel \{/);
+  assert.match(theme, /\.admin-panel \.admin-search input/);
+  assert.match(theme, /\.admin-panel \.admin-search \.secondary/);
   for (const code of [
     "ja",
     "en",
