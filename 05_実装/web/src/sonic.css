@@ -1719,6 +1719,7 @@ footer a {
   }
   .world-vision h2 span {
     white-space: nowrap;
+    word-spacing: 0.12em;
   }
   .world-vision-copy p {
     margin-top: 24px;
