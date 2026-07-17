@@ -1695,7 +1695,7 @@ footer a {
     min-height: 690px;
   }
   .world-vision > img {
-    object-position: 52% center;
+    animation: world-vision-mobile-pan 20s ease-in-out infinite alternate;
   }
   .world-vision-shade {
     background:
@@ -1713,9 +1713,12 @@ footer a {
     left: 20px;
   }
   .world-vision h2 {
-    font-size: clamp(45px, 13vw, 58px);
+    font-size: clamp(35px, 10.2vw, 42px);
     line-height: 0.9;
     letter-spacing: -0.055em;
+  }
+  .world-vision h2 span {
+    white-space: nowrap;
   }
   .world-vision-copy p {
     margin-top: 24px;
@@ -1773,6 +1776,21 @@ footer a {
   }
   footer {
     padding-inline: 20px;
+  }
+}
+
+@keyframes world-vision-mobile-pan {
+  0% {
+    object-position: 18% center;
+    scale: 1.025;
+  }
+  50% {
+    object-position: 50% center;
+    scale: 1.055;
+  }
+  100% {
+    object-position: 82% center;
+    scale: 1.025;
   }
 }
 
