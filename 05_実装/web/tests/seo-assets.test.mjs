@@ -84,3 +84,15 @@ test("homepage carries the global vision campaign", async () => {
   assert.match(app, /every-voice-world\.webp/);
   assert.ok(image.byteLength > 100_000);
 });
+
+test("mobile layouts are intentionally composed for home and account", async () => {
+  const [app, sonic] = await Promise.all([
+    readFile(new URL("src/App.tsx", root), "utf8"),
+    readFile(new URL("src/sonic.css", root), "utf8"),
+  ]);
+  assert.match(app, /<p className="eyebrow">[\s\S]*?<h1 lang=\{locale\}>/);
+  assert.match(sonic, /Mobile is a dedicated composition/);
+  assert.match(sonic, /grid-auto-columns: min\(82vw, 310px\)/);
+  assert.match(sonic, /\.account-page[\s\S]*?padding: 26px 12px 44px/);
+  assert.match(sonic, /\.audio-controls[\s\S]*?grid-template-columns: 1fr 1fr/);
+});

@@ -595,7 +595,7 @@ export function App() {
               <p className="section-kicker">
                 {user.role === "admin" ? "ADMINISTRATOR" : t.account}
               </p>
-              <h1>
+              <h1 lang={locale}>
                 {t.greeting}
                 {user.display_name ? `、${user.display_name}` : ""}
               </h1>
@@ -678,7 +678,7 @@ export function App() {
                 <Sparkles size={16} />
                 {t.eyebrow}
               </p>
-              <h1>
+              <h1 lang={locale}>
                 {heroLines.map((line, i) => (
                   <span key={line}>
                     {line}
