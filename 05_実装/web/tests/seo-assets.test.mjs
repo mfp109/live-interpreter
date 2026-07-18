@@ -75,6 +75,7 @@ test("homepage demo is language-neutral and localized in every site language", a
     readFile(new URL("src/site-copy-extra.ts", root), "utf8"),
   ]);
   assert.doesNotMatch(app, /live-demo\.mp4/);
+  assert.doesNotMatch(app, /\{t\.demoTitle\}|\{t\.demoText\}/);
   assert.match(app, /<UniversalDemo/);
   assert.match(demo, /\["あ", "A", "文", "한", "अ", "Ñ", "ع"\]/);
   assert.match(demo, /playSonicLogo/);

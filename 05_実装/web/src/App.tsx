@@ -836,11 +836,6 @@ export function App() {
               />
               <span>{t.demoPlaceholder}</span>
             </div>
-            <div>
-              <p className="section-kicker">SEE IT IN ACTION</p>
-              <h2>{t.demoTitle}</h2>
-              <p>{t.demoText}</p>
-            </div>
           </section>
           <section id="how" className="section">
             <p className="section-kicker">WHY LIVE INTERPRETER</p>
