@@ -3,7 +3,6 @@ import {
   Check,
   Globe2,
   Headphones,
-  Play,
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
@@ -18,7 +17,6 @@ import { ResetPassword } from "./ResetPassword";
 import { AccountTools } from "./AccountTools";
 import { isLocale, Locale, localeOptions } from "./locales";
 import { siteCopyExtra } from "./site-copy-extra";
-import { UniversalDemo } from "./UniversalDemo";
 
 type View = "home" | "account";
 const copy = {
@@ -694,17 +692,6 @@ export function App() {
                   {t.cta}
                   <ArrowRight size={19} />
                 </button>
-                <button
-                  className="secondary"
-                  onClick={() =>
-                    document
-                      .getElementById("demo")
-                      ?.scrollIntoView({ behavior: "smooth" })
-                  }
-                >
-                  <Play size={17} />
-                  {t.demo}
-                </button>
               </div>
               <p className="trial">
                 <Check size={16} />
@@ -827,15 +814,6 @@ export function App() {
             <span>INTERNATIONAL COMMUNITIES</span>
             <span>FAITH COMMUNITIES</span>
             <span>CUSTOMER SUPPORT</span>
-          </section>
-          <section id="demo" className="demo-section">
-            <div className="demo-video-wrap">
-              <UniversalDemo
-                label={t.demoVisualLabel}
-                soundLabel={t.demoSound}
-              />
-              <span>{t.demoPlaceholder}</span>
-            </div>
           </section>
           <section id="how" className="section">
             <p className="section-kicker">WHY LIVE INTERPRETER</p>
