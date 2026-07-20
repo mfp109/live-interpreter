@@ -27,6 +27,7 @@ const copy = {
     login: "ログイン",
     account: "マイページ",
     cta: "1分無料で試す",
+    productHunt: "Product Huntで 7月23日公開",
     eyebrow: "声が届けば、心も届く。",
     hero: "話した言葉を、\nそのまま世界へ。",
     lead: "マイクに話すだけ。低遅延のAI音声通訳が、あなたの声を別の言語へ届けます。字幕を読む必要はありません。",
@@ -97,6 +98,7 @@ const copy = {
     login: "Sign in",
     account: "My account",
     cta: "Try 1 minute free",
+    productHunt: "Launching on Product Hunt · July 23",
     eyebrow: "When your voice reaches them, your heart can too.",
     hero: "Speak naturally.\nBe heard worldwide.",
     lead: "Just speak into your microphone. Low-latency AI interpretation carries your voice into another language—no subtitles to follow.",
@@ -169,6 +171,7 @@ const copy = {
     login: "登录",
     account: "我的账户",
     cta: "免费试用1分钟",
+    productHunt: "7月23日于 Product Hunt 发布",
     eyebrow: "声音传达，心意也能传达。",
     hero: "自然说话，\n让世界听见。",
     lead: "只需对着麦克风说话。低延迟AI语音口译会将您的声音转换成另一种语言，无需阅读字幕。",
@@ -692,6 +695,17 @@ export function App() {
                   {t.cta}
                   <ArrowRight size={19} />
                 </button>
+                <a
+                  className="product-hunt-link"
+                  href="https://www.producthunt.com/products/live-interpreter?launch=live-interpreter"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`${t.productHunt} (Product Hunt)`}
+                >
+                  <span aria-hidden="true">P</span>
+                  {t.productHunt}
+                  <ArrowRight size={17} />
+                </a>
               </div>
               <p className="trial">
                 <Check size={16} />
