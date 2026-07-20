@@ -5,12 +5,15 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+const targetArch = "arm64";
 const nativeBinary = path.join(root, "native", "bin", "process-audio-tap");
 mkdirSync(path.dirname(nativeBinary), { recursive: true });
 const compileResult = spawnSync(
   "xcrun",
   [
     "clang",
+    "-arch",
+    targetArch,
     "-fobjc-arc",
     "-fblocks",
     "-framework",
@@ -33,7 +36,7 @@ const appPaths = await packager({
   name: "Live Interpreter",
   appBundleId: "tech.shalomworks.live-interpreter",
   platform: "darwin",
-  arch: process.arch === "arm64" ? "arm64" : "x64",
+  arch: targetArch,
   out: path.join(root, "dist"),
   overwrite: true,
   asar: true,
