@@ -6,6 +6,8 @@ ShalomWorks Live Interpreter is an OpenAI Build Week project with two working ex
 
 **Live application:** [live-interpreter.shalomworks.tech](https://live-interpreter.shalomworks.tech/)
 
+**Apple Silicon Mac download:** [Live Interpreter v0.1.0 for macOS](https://github.com/mfp109/live-interpreter/releases/tag/v0.1.0-mac-arm64)
+
 **Demo video:** [Live Interpreter — Real-Time AI Interpretation for Web & Mac](https://youtu.be/S8HPPdMVj3g)
 
 **Built with:** Codex, GPT-5.6, OpenAI Realtime, Electron, Core Audio, Objective-C, React, PHP, Node.js, MySQL, Stripe, and WebSockets
@@ -164,6 +166,18 @@ Web secrets never reach the browser. Its OpenAI API key is stored only on the VP
 05_実装/mac-app/         Electron + native Core Audio macOS app
 ```
 
+## Download the native macOS app
+
+The ready-to-run judge build supports Apple Silicon Macs (M1 or later) with macOS 13 or later.
+
+1. Download `Live-Interpreter-macOS-Apple-Silicon-v0.1.0.zip` from the [GitHub Release](https://github.com/mfp109/live-interpreter/releases/tag/v0.1.0-mac-arm64).
+2. Open the ZIP and move `Live Interpreter.app` to Applications.
+3. On first launch, Control-click the app, choose **Open**, and confirm **Open** if macOS displays an unidentified-developer warning.
+4. Open **Live Interpreter > Settings**, enter your own OpenAI API key, and save it. The key is encrypted locally and is not bundled with the download.
+5. Allow Microphone and Screen Recording permissions when macOS asks. Restart the app after granting Screen Recording permission.
+
+The release also includes a SHA-256 checksum file. The app is ad-hoc signed for hackathon testing and is not notarized through the Mac App Store.
+
 ## Local development
 
 ### Requirements
@@ -268,7 +282,7 @@ A newly registered and verified account receives one free minute. The dedicated 
 
 The submission video demonstrates the advanced native workflow, including per-application system-audio capture, independent audio routing, multilingual captions, and the shareable caption window. Its complete source is in `05_実装/mac-app`.
 
-Judges who want to run it locally can follow the native app commands above and use their own OpenAI API key. This is optional: the public web evaluation path and dedicated judge account provide free product access without requiring a judge-owned key.
+Judges with an Apple Silicon Mac can download the ready-to-run build from the [GitHub Release](https://github.com/mfp109/live-interpreter/releases/tag/v0.1.0-mac-arm64) and use their own OpenAI API key. Building from source is not required. This native test is optional: the public web evaluation path and dedicated judge account provide free product access without requiring a judge-owned key.
 
 ## Privacy and safety
 
