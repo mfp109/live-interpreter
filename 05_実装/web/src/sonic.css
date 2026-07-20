@@ -291,12 +291,46 @@ nav a:hover {
   letter-spacing: 0.02em;
 }
 .hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
   margin-top: 35px;
 }
 .hero-actions .primary,
 .hero-actions .secondary {
   min-height: 54px;
   padding-inline: 24px;
+}
+.product-hunt-link {
+  display: inline-flex;
+  min-height: 54px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  border: 1px solid rgba(255, 97, 84, 0.46);
+  border-radius: 999px;
+  color: #fff2ef;
+  background: rgba(255, 97, 84, 0.08);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: 160ms ease;
+}
+.product-hunt-link > span {
+  display: grid;
+  width: 27px;
+  height: 27px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: #ff6154;
+  font: 800 15px/1 var(--sonic-mono);
+}
+.product-hunt-link:hover {
+  border-color: rgba(255, 97, 84, 0.78);
+  background: rgba(255, 97, 84, 0.14);
+  transform: translateY(-2px);
 }
 .trial {
   margin-top: 20px;
