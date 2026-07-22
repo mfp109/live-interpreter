@@ -47,3 +47,14 @@ test("maps translation transcript deltas", () => {
     "Hello",
   );
 });
+
+test("gateway reports ready only after OpenAI accepts translation settings", async () => {
+  const server = await import("node:fs/promises").then(({ readFile }) =>
+    readFile(new URL("../src/server.mjs", import.meta.url), "utf8"),
+  );
+  const translationHandler = server.slice(server.indexOf("const openTranslation"), server.indexOf("const openSourceTranscription"));
+  const openHandler = translationHandler.slice(translationHandler.indexOf('upstream.on("open"'), translationHandler.indexOf('upstream.on("message"'));
+  assert.match(translationHandler, /output\.type === "session\.updated"\) markReady\(key\)/);
+  assert.doesNotMatch(openHandler, /markReady\(key\)/);
+  assert.match(translationHandler, /translation_upstream_error/);
+});

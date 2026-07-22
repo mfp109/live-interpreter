@@ -454,6 +454,7 @@ test("native audio tap resolves child audio processes for Safari-style apps", as
   assert.match(source, /processIsDescendantOf/);
   assert.match(source, /audioProcessObjectsForApplicationPID/);
   assert.match(source, /initStereoMixdownOfProcesses:processIDs/);
+  assert.doesNotMatch(source, /!\[info\[@"runningOutput"\] boolValue\]/);
 });
 
 test("audio source picker includes microphones without monitoring them to speakers", async () => {

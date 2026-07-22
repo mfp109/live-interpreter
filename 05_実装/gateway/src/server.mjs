@@ -217,7 +217,6 @@ wss.on("connection", (client, request) => {
           session: { audio: { output: { language } } },
         }),
       );
-      markReady(key);
     });
     upstream.on("message", (message) => {
       let output;
@@ -226,6 +225,7 @@ wss.on("connection", (client, request) => {
       } catch {
         return;
       }
+      if (output.type === "session.updated") markReady(key);
       if (
         language === plan.audioTarget &&
         (output.type === "session.output_audio.delta" ||
@@ -248,11 +248,18 @@ wss.on("connection", (client, request) => {
             delta: transcriptDelta,
           }),
         );
-      if (output.type === "error") closeAll(1011, "translation_error");
+      if (output.type === "error") {
+        console.error("translation_upstream_error", output.error?.code || output.error?.type || "unknown");
+        closeAll(1011, "translation_error");
+      }
       if (output.type === "session.closed") closeAll();
     });
-    upstream.on("error", () => closeAll(1011, "translation_unavailable"));
-    upstream.on("close", () => {
+    upstream.on("error", (error) => {
+      console.error("translation_upstream_unavailable", error.message);
+      closeAll(1011, "translation_unavailable");
+    });
+    upstream.on("close", (code) => {
+      if (!closing) console.error("translation_upstream_closed", code);
       if (!closing) closeAll(1011, "translation_closed");
     });
   };
@@ -303,11 +310,18 @@ wss.on("connection", (client, request) => {
         client.send(
           JSON.stringify({ ...captionEvent, caption_key: "source" }),
         );
-      if (output.type === "error") closeAll(1011, "transcription_error");
+      if (output.type === "error") {
+        console.error("transcription_upstream_error", output.error?.code || output.error?.type || "unknown");
+        closeAll(1011, "transcription_error");
+      }
       if (output.type === "session.closed") closeAll();
     });
-    upstream.on("error", () => closeAll(1011, "transcription_unavailable"));
-    upstream.on("close", () => {
+    upstream.on("error", (error) => {
+      console.error("transcription_upstream_unavailable", error.message);
+      closeAll(1011, "transcription_unavailable");
+    });
+    upstream.on("close", (code) => {
+      if (!closing) console.error("transcription_upstream_closed", code);
       if (!closing) closeAll(1011, "transcription_closed");
     });
   };

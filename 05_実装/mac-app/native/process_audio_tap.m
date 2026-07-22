@@ -128,17 +128,19 @@ static BOOL processIsDescendantOf(pid_t childPID, pid_t ancestorPID) {
 }
 
 static NSArray<NSNumber *> *audioProcessObjectsForApplicationPID(pid_t applicationPID) {
-    NSMutableArray<NSNumber *> *runningMatches = [NSMutableArray array];
+    NSMutableArray<NSNumber *> *applicationMatches = [NSMutableArray array];
     AudioObjectID directID = processObjectForPID(applicationPID);
     for (NSNumber *processNumber in audioProcessObjectIDs()) {
         NSDictionary *info = processInfo(processNumber);
-        if (!info || ![info[@"runningOutput"] boolValue]) continue;
+        if (!info) continue;
         pid_t candidatePID = (pid_t)[info[@"pid"] intValue];
         if (candidatePID == applicationPID || processIsDescendantOf(candidatePID, applicationPID)) {
-            [runningMatches addObject:processNumber];
+            [applicationMatches addObject:processNumber];
         }
     }
-    if (runningMatches.count > 0) return runningMatches;
+    // Include idle audio helpers too. Zoom (caphost), Safari and Chromium apps
+    // can begin output through an existing helper only after the tap is made.
+    if (applicationMatches.count > 0) return applicationMatches;
     return directID == kAudioObjectUnknown ? @[] : @[@(directID)];
 }
 
